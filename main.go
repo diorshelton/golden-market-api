@@ -10,12 +10,17 @@ type User struct {
 	Inventory []Item
 }
 
-func AddToInventory(u *User, productID, quantity int) []Item {
-	newItem := Item{ProductID: productID, Quantity: quantity}
-
-	u.Inventory = append(u.Inventory, newItem)
-
-	return u.Inventory
+func AddToInventory(u *User, productID, quantity int) {
+	for i, item := range u.Inventory {
+		if item.ProductID == productID {
+			u.Inventory[i].Quantity += quantity
+			return
+		}
+	}
+	u.Inventory = append(u.Inventory, Item{
+		ProductID: productID,
+		Quantity:  quantity,
+	})
 }
 
 func main() {

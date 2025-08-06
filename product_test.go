@@ -19,16 +19,20 @@ func TestAddToInventory(t *testing.T) {
 			t.Errorf("Expected inventory length 1, got %d", len(user.Inventory))
 		}
 	})
-	t.Run("adds specific quantity of product to inventory", func(t *testing.T) {
+	t.Run("adds specified product quantity to user inventory", func(t *testing.T) {
 		user := User{
 			ID:        0,
 			Inventory: []Item{},
 		}
 
-		AddToInventory(&user, 12, 5)
+		AddToInventory(&user, 12, 7)
+		AddToInventory(&user, 5, 1)
+		AddToInventory(&user, 12, 1)
 
-		if user.Inventory[0].ProductID != 12 || user.Inventory[0].Quantity != 5 {
-			t.Errorf("Item not added correctly %+v", user.Inventory[0])
+		expected := Item{ProductID: 12, Quantity: 8}
+
+		if user.Inventory[0].ProductID != 12 || user.Inventory[0].Quantity != 8 {
+			t.Errorf("Item not added correctly, got %+v expected %+v", user.Inventory[0], expected)
 		}
 	})
 
