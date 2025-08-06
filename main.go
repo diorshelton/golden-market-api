@@ -1,18 +1,20 @@
 package main
 
 type Item struct {
-	ID int
+	ProductID int
+	Quantity  int
 }
 
 type User struct {
-	ID int
-	Inventory  []Item
+	ID        int
+	Inventory []Item
 }
 
 func AddToInventory(u *User, productID, quantity int) []Item {
-	newItem := Item{ID: 0}
+	newItem := Item{ProductID: productID, Quantity: quantity}
 
 	u.Inventory = append(u.Inventory, newItem)
+
 	return u.Inventory
 }
 
