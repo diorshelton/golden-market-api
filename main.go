@@ -25,8 +25,10 @@ func AddToInventory(user *User, productID, quantity int) {
 
 func RemoveFromInventory(user *User, productID, quantity int) {
 	for i, item := range user.Inventory {
+
 		itemCount := user.Inventory[i].Quantity
-		if item.ProductID == productID && itemCount-quantity <= 0 {
+
+		if item.ProductID == productID && itemCount - quantity <= 0 {
 			user.Inventory[i].Quantity = 0
 			return
 		}
