@@ -6,7 +6,6 @@ import (
 
 func TestAddToInventory(t *testing.T) {
 	t.Run("Should add product to inventory", func(t *testing.T) {
-
 		user := User{
 			ID:        0,
 			Inventory: []Item{},
@@ -56,36 +55,19 @@ func TestRemoveFromInventory(t *testing.T) {
 
 		assertItemQuantity(t, got, want, &user)
 	})
-	t.Run("Should remove specified quantity", func(t *testing.T) {
-		t.Skip("skipping test")
-		user := User{
-			ID:        0,
-			Inventory: []Item{},
-		}
-
-		AddToInventory(&user, 4, 5)
-		RemoveFromInventory(&user, 4, 3)
-
-		got := checkItemQuantity(&user, 4)
-		want := 2
-
-		assertItemQuantity(t, got, want, &user)
-	})
 	t.Run("Inventory should NOT be negative", func(t *testing.T) {
-		t.Skip("Skipping Test")
-
 		user := User{
 			ID:        0,
 			Inventory: []Item{},
 		}
 
 		AddToInventory(&user, 6, 1)
-		RemoveFromInventory(&user, 4, 4)
+		AddToInventory(&user, 9, 33)
+		RemoveFromInventory(&user, 6, 4)
 
 		got := checkItemQuantity(&user, 6)
 		want := 0
-
-		assertItemQuantity(t,got, want, &user)
+		assertItemQuantity(t, got, want, &user)
 	})
 }
 
