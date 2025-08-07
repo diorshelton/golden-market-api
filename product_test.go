@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -36,4 +37,26 @@ func TestAddToInventory(t *testing.T) {
 		}
 	})
 
+}
+
+func TestRemoveFromInventory(t *testing.T) {
+	t.Run("should remove an item from inventory", func(t *testing.T) {
+		user := User{
+			ID:        0,
+			Inventory: []Item{},
+		}
+
+		AddToInventory(&user, 4, 1)
+
+		RemoveFromInventory(&user, 4)
+
+
+		got := user.Inventory[0].Quantity
+
+		want := 0
+		fmt.Printf("Got %v and an Inventory of:%v", got,user.Inventory)
+		if got != want {
+			t.Errorf("Wanted %v but got %v", want, got)
+		}
+	})
 }

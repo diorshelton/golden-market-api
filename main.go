@@ -23,5 +23,13 @@ func AddToInventory(user *User, productID, quantity int) {
 	})
 }
 
-func main() {
+func RemoveFromInventory(user *User, productID int) {
+	for _, item := range user.Inventory {
+		if item.ProductID == productID {
+			user.Inventory[0].Quantity -= 1
+		}
+	}
+}
+
+func main(){
 }
