@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -46,17 +45,65 @@ func TestRemoveFromInventory(t *testing.T) {
 			Inventory: []Item{},
 		}
 
-		AddToInventory(&user, 4, 1)
+		AddToInventory(&user, 41, 1)
+		AddToInventory(&user, 4, 3)
+		AddToInventory(&user, 11, 7)
+		AddToInventory(&user, 4, 3)
+		RemoveFromInventory(&user, 4, 1)
 
-		RemoveFromInventory(&user, 4)
+		got := checkItemQuantity(&user, 4)
+		want := 5
 
-
-		got := user.Inventory[0].Quantity
-
-		want := 0
-		fmt.Printf("Got %v and an Inventory of:%v", got,user.Inventory)
-		if got != want {
-			t.Errorf("Wanted %v but got %v", want, got)
-		}
+		assertItemQuantity(t, got, want, &user)
 	})
+	t.Run("Should remove specified quantity", func(t *testing.T) {
+		t.Skip("skipping test")
+		user := User{
+			ID:        0,
+			Inventory: []Item{},
+		}
+
+		AddToInventory(&user, 4, 5)
+		RemoveFromInventory(&user, 4, 3)
+
+		got := checkItemQuantity(&user, 4)
+		want := 2
+
+		assertItemQuantity(t, got, want, &user)
+	})
+	t.Run("Inventory should NOT be negative", func(t *testing.T) {
+		t.Skip("Skipping Test")
+
+		user := User{
+			ID:        0,
+			Inventory: []Item{},
+		}
+
+		AddToInventory(&user, 6, 1)
+		RemoveFromInventory(&user, 4, 4)
+
+		got := checkItemQuantity(&user, 6)
+		want := 0
+
+		assertItemQuantity(t,got, want, &user)
+	})
+}
+
+func assertItemQuantity(t testing.TB, got, want int, user *User) {
+	t.Helper()
+
+	if got != want {
+		t.Errorf("Got %v but wanted %v", got, want)
+		t.Errorf("UserInventory:%+v", user.Inventory)
+	}
+}
+
+// check User inventory for item quantity when given productID
+func checkItemQuantity(user *User, itemID int) int {
+	for _, item := range user.Inventory {
+		if item.ProductID == itemID {
+			return item.Quantity
+		}
+	}
+	return -1
 }
