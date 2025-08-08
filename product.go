@@ -1,5 +1,7 @@
 package main
 
+import "errors"
+
 type Product struct {
 	ID int
 }
@@ -27,14 +29,18 @@ func AddToInventory(user *User, productID, quantity int) {
 	})
 }
 
-func RemoveFromInventory(user *User, productID, quantity int) {
+func RemoveFromInventory(user *User, productID, quantity int) error {
 	for i, item := range user.Inventory {
-		itemCount := user.Inventory[i].Quantity
-		//remove item if quantity <= 0
-		if item.ProductID == productID && itemCount-quantity <= 0 {
-			user.Inventory = append(user.Inventory[:i], user.Inventory[i+1:]...)
-			return
+		if item.ProductID == productID {
+			if item.Quantity < quantity {
+				return errors.New("not enough items to remove")
+			}
+			user.Inventory[i].Quantity -= quantity
+			if user.Inventory[i].Quantity == 0 {
+				user.Inventory = append(user.Inventory[:i], user.Inventory[i+1:]...)
+			}
+			return nil
 		}
-		user.Inventory[i].Quantity -= quantity
 	}
+	return errors.New("item not found inventory")
 }

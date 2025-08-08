@@ -55,23 +55,32 @@ func TestRemoveFromInventory(t *testing.T) {
 
 		assertItemQuantity(t, got, want, &user)
 	})
-	t.Run("Inventory should NOT be negative", func(t *testing.T) {
-		user := User{
-			ID:        0,
-			Inventory: []Item{},
+
+	t.Run("Return error if inventory negative", func(t *testing.T) {
+		user := &User{
+			ID: 2,
+			Inventory: []Item{
+				{ProductID: 5, Quantity: 4},
+			},
 		}
 
-		AddToInventory(&user, 6, 1)
-		AddToInventory(&user, 9, 33)
-		RemoveFromInventory(&user, 6, 4)
-
-		got := checkItemQuantity(&user, 6)
-		want := 0
-		assertItemQuantity(t, got, want, &user)
+		err := RemoveFromInventory(user, 5, 5)
+		if err == nil {
+			t.Error("Expected error but didn't get one")
+		}
 	})
-	t.Run("Remove an item that does not exist", func(t *testing.T) {
-		t.Skip("NOT YET IMPLEMENTED")
+	t.Run("Return error if item not found", func(t *testing.T) {
+		user := &User{
+			ID: 2,
+			Inventory: []Item{
+				{ProductID: 5, Quantity: 4},
+			},
+		}
 
+		err := RemoveFromInventory(user, 2, 5)
+		if err == nil {
+			t.Error("Expected error but didn't get one")
+		}
 	})
 }
 
