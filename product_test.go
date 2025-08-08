@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"time"
 )
 
 func TestAddToInventory(t *testing.T) {
@@ -82,6 +83,24 @@ func TestRemoveFromInventory(t *testing.T) {
 			t.Error("Expected error but didn't get one")
 		}
 	})
+}
+
+func TestRestockProduct(t *testing.T) {
+	product := Product{
+		ID:          1,
+		Name:        "Sweet Potato",
+		Stock:       5,
+		RestockRate: 3,
+		MaxStock:    10,
+		LastRestock: time.Now().Add(-2 * time.Hour),
+	}
+
+	got := RestockProduct(&product)
+	want := 8
+
+	if product.Stock != want {
+		t.Errorf("Got %d but wanted %d", got, want)
+	}
 }
 
 func assertItemQuantity(t testing.TB, got, want int, user *User) {

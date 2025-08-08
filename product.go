@@ -2,8 +2,15 @@ package main
 
 import "errors"
 
+import "time"
+
 type Product struct {
 	ID int
+	Name string
+	Stock int
+	RestockRate int
+	MaxStock int
+	LastRestock time.Time
 }
 
 type Item struct {
