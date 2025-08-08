@@ -69,6 +69,10 @@ func TestRemoveFromInventory(t *testing.T) {
 		want := 0
 		assertItemQuantity(t, got, want, &user)
 	})
+	t.Run("Remove an item that does not exist", func(t *testing.T) {
+		t.Skip("NOT YET IMPLEMENTED")
+
+	})
 }
 
 func assertItemQuantity(t testing.TB, got, want int, user *User) {
@@ -87,5 +91,5 @@ func checkItemQuantity(user *User, itemID int) int {
 			return item.Quantity
 		}
 	}
-	return -1
+	return 0
 }
