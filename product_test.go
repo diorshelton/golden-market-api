@@ -95,11 +95,14 @@ func TestRestockProduct(t *testing.T) {
 		LastRestock: time.Now().Add(-2 * time.Hour),
 	}
 
-	got := RestockProduct(&product)
-	want := 8
+	RestockProduct(&product)
 
-	if product.Stock != want {
-		t.Errorf("Got %d but wanted %d", got, want)
+	if product.Stock != 8{
+		t.Errorf("Got %d but wanted 8", product.Stock)
+	}
+
+	if time.Since(product.LastRestock) > time.Minute {
+		t.Error("Last Restock not updated correctly")
 	}
 }
 
