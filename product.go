@@ -18,10 +18,8 @@ type Item struct {
 	Quantity  int
 }
 
-type User struct {
-	ID        int
-	Inventory []Item
-}
+type Coins int32
+
 
 func AddToInventory(user *User, productID, quantity int) {
 	for i, item := range user.Inventory {
