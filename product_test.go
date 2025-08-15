@@ -97,7 +97,7 @@ func TestRestockProduct(t *testing.T) {
 
 	RestockProduct(&product)
 
-	if product.Stock != 8{
+	if product.Stock != 8 {
 		t.Errorf("Got %d but wanted 8", product.Stock)
 	}
 

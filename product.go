@@ -5,11 +5,11 @@ import "errors"
 import "time"
 
 type Product struct {
-	ID int
-	Name string
-	Stock int
+	ID          int
+	Name        string
+	Stock       int
 	RestockRate int
-	MaxStock int
+	MaxStock    int
 	LastRestock time.Time
 }
 
@@ -19,7 +19,6 @@ type Item struct {
 }
 
 type Coins int32
-
 
 func AddToInventory(user *User, productID, quantity int) {
 	for i, item := range user.Inventory {
@@ -50,14 +49,14 @@ func RemoveFromInventory(user *User, productID, quantity int) error {
 	return errors.New("item not found inventory")
 }
 
-func RestockProduct(p *Product)  {
+func RestockProduct(p *Product) {
 	now := time.Now()
 	if now.Sub(p.LastRestock) >= time.Hour {
 		newStock := p.Stock + p.RestockRate
 		if newStock > p.MaxStock {
 			newStock = p.MaxStock
 		}
-		p.Stock= newStock
+		p.Stock = newStock
 		p.LastRestock = now
 	}
 }
