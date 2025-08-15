@@ -8,7 +8,7 @@ type Product struct {
 	ID          int       `json:"id"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
-	Price       Coins     `json:"coins"`
+	Price       Coins     `json:"price"`
 	Stock       int       `json:"stock"`
 	RestockRate int       `json:"restock_rate"`
 	MaxStock    int       `json:"max_stock"`
