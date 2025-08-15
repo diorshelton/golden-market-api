@@ -1,22 +1,21 @@
 package main
 
 import (
-	"time"
 	"golang.org/x/crypto/bcrypt"
+	"time"
 )
 
-
 type User struct {
-	ID          int
-	Username    string
-	FirstName   string
-	LastName    string
-	DateOfBirth time.Time
-	Email       string
-	Password    string
-	Balance     Coins
-	Inventory   []Item
-	CreatedAt   time.Time
+	ID          int       `json:"id"`
+	Username    string    `json:"username"`
+	FirstName   string    `json:"first_name"`
+	LastName    string    `json:"last_name"`
+	DateOfBirth time.Time `json:"date_of_birth"`
+	Email       string    `json:"email"`
+	Password    string    `json:"-"`
+	Balance     Coins     `json:"balance"`
+	Inventory   []Item    `json:"inventory,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 func HashPassword(password string) (string, error) {
@@ -24,8 +23,7 @@ func HashPassword(password string) (string, error) {
 	return string(bytes), err
 }
 
-
 func CheckPasswordHash(password, hash string) bool {
-    err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-    return err == nil
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
 }

@@ -5,17 +5,21 @@ import "errors"
 import "time"
 
 type Product struct {
-	ID          int
-	Name        string
-	Stock       int
-	RestockRate int
-	MaxStock    int
-	LastRestock time.Time
+	ID          int       `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Price       Coins     `json:"coins"`
+	Stock       int       `json:"stock"`
+	RestockRate int       `json:"restock_rate"`
+	MaxStock    int       `json:"max_stock"`
+	VendorID    int       `json:"vendor_id"`
+	LastRestock time.Time `json:"last_restock"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 type Item struct {
-	ProductID int
-	Quantity  int
+	ProductID int `json:"product_id"`
+	Quantity  int `json:"quantity"`
 }
 
 type Coins int32
@@ -49,14 +53,14 @@ func RemoveFromInventory(user *User, productID, quantity int) error {
 	return errors.New("item not found inventory")
 }
 
-func RestockProduct(p *Product) {
+func RestockProduct(product *Product) {
 	now := time.Now()
-	if now.Sub(p.LastRestock) >= time.Hour {
-		newStock := p.Stock + p.RestockRate
-		if newStock > p.MaxStock {
-			newStock = p.MaxStock
+	if now.Sub(product.LastRestock) >= time.Hour {
+		newStock := product.Stock + product.RestockRate
+		if newStock > product.MaxStock {
+			newStock = product.MaxStock
 		}
-		p.Stock = newStock
-		p.LastRestock = now
+		product.Stock = newStock
+		product.LastRestock = now
 	}
 }

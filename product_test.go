@@ -35,7 +35,6 @@ func TestAddToInventory(t *testing.T) {
 			t.Errorf("Item not added correctly, got %+v expected %+v", user.Inventory[0], expected)
 		}
 	})
-
 }
 
 func TestRemoveFromInventory(t *testing.T) {
