@@ -56,7 +56,7 @@ func RemoveFromInventory(user *User, productID, quantity int) error {
 func RestockProduct(product *Product) {
 	now := time.Now()
 	if now.Sub(product.LastRestock) >= time.Hour {
-		newStock := min(product.Stock + product.RestockRate, product.MaxStock)
+		newStock := min(product.Stock+product.RestockRate, product.MaxStock)
 		product.Stock = newStock
 		product.LastRestock = now
 	}
