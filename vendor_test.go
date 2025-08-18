@@ -40,11 +40,11 @@ func TestSellProduct(t *testing.T) {
 		t.Errorf("Product stock should be %v got %v", expectedStock, product.Stock)
 	}
 
-	got := len(user.Inventory)
-	want := 1
+	expectedInventory := len(user.Inventory)
+	want := itemQuantity
 
-	if got != 1 || user.Inventory[0].ProductID != 1 {
-		t.Errorf("got %v but want %v, user.Inventory:%v", got, want, user.Inventory)
+	if expectedInventory != 1 || user.Inventory[0].ProductID != product.ID {
+		t.Errorf("got %v but want %v, user.Inventory:%v", expectedInventory, want, user.Inventory)
 	}
 
 }
