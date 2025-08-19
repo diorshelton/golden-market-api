@@ -11,14 +11,11 @@ func TestSellProduct(t *testing.T) {
 	}
 
 	var product = Product{
-		ID:          1,
-		Name:        "Sweet Potato",
-		Price:       4,
-		Stock:       5,
-		RestockRate: 3,
-		MaxStock:    10,
-		LastRestock: time.Now().Add(-2 * time.Hour),
-		VendorID:    sonny.ID,
+		ID:       1,
+		Name:     "Sweet Potato",
+		Price:    4,
+		Stock:    5,
+		VendorID: sonny.ID,
 	}
 
 	var user = User{
@@ -26,11 +23,11 @@ func TestSellProduct(t *testing.T) {
 		Balance: 34,
 	}
 
-	itemQuantity := 1
+	itemCount := 1
 	expectedBal := user.Balance - product.Price
-	expectedStock := product.Stock - itemQuantity
+	expectedStock := product.Stock - itemCount
 
-	SellProduct(&user, &product, itemQuantity)
+	SellProduct(&user, &product, itemCount)
 
 	if user.Balance != expectedBal {
 		t.Errorf("User's balance should be %v got %v", expectedBal, user.Balance)
@@ -40,11 +37,11 @@ func TestSellProduct(t *testing.T) {
 		t.Errorf("Product stock should be %v got %v", expectedStock, product.Stock)
 	}
 
-	expectedInventory := len(user.Inventory)
-	want := itemQuantity
+	got := user.Inventory[0].Quantity
+	want := itemCount
 
-	if expectedInventory != 1 || user.Inventory[0].ProductID != product.ID {
-		t.Errorf("got %v but want %v, user.Inventory:%v", expectedInventory, want, user.Inventory)
+	if got != want {
+		t.Errorf("got user inventory of %v but want %v, Inventory:%+v", got, want, user.Inventory)
 	}
 
 	t.Run("user can purchase multiple items", func(t *testing.T) {
@@ -53,14 +50,11 @@ func TestSellProduct(t *testing.T) {
 		}
 
 		var product = Product{
-			ID:          1,
-			Name:        "Peach",
-			Price:       4,
-			Stock:       5,
-			RestockRate: 3,
-			MaxStock:    10,
-			LastRestock: time.Now().Add(-2 * time.Hour),
-			VendorID:    sonny.ID,
+			ID:       1,
+			Name:     "Peach",
+			Price:    4,
+			Stock:    5,
+			VendorID: sonny.ID,
 		}
 
 		var user = User{
@@ -93,7 +87,6 @@ func TestSellProduct(t *testing.T) {
 			Name:        "Tomato",
 			Price:       3,
 			Stock:       5,
-			RestockRate: 3,
 			MaxStock:    10,
 			LastRestock: time.Now(),
 			VendorID:    sonny.ID,
@@ -105,8 +98,6 @@ func TestSellProduct(t *testing.T) {
 		}
 
 		itemCount := 7
-		saleTotal := product.Price * Coins(itemCount)
-		expectedBal = user.Balance - saleTotal
 		got := SellProduct(&user, &product, itemCount)
 
 		if product.Stock < 0 {
@@ -124,14 +115,11 @@ func TestSellProduct(t *testing.T) {
 		}
 
 		var product = Product{
-			ID:          1,
-			Name:        "Lemon Cake Slice",
-			Price:       2,
-			Stock:       5,
-			RestockRate: 3,
-			MaxStock:    10,
-			LastRestock: time.Now().Add(-2 * time.Hour),
-			VendorID:    sonny.ID,
+			ID:       1,
+			Name:     "Lemon Cake Slice",
+			Price:    2,
+			Stock:    5,
+			VendorID: sonny.ID,
 		}
 
 		var user = User{
