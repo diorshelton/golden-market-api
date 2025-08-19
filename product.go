@@ -8,7 +8,7 @@ type Product struct {
 	ID          int       `json:"id"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
-	Price       Coins     `json:"coins"`
+	Price       Coins     `json:"price"`
 	Stock       int       `json:"stock"`
 	RestockRate int       `json:"restock_rate"`
 	MaxStock    int       `json:"max_stock"`
@@ -56,7 +56,7 @@ func RemoveFromInventory(user *User, productID, quantity int) error {
 func RestockProduct(product *Product) {
 	now := time.Now()
 	if now.Sub(product.LastRestock) >= time.Hour {
-		newStock := min(product.Stock + product.RestockRate, product.MaxStock)
+		newStock := min(product.Stock+product.RestockRate, product.MaxStock)
 		product.Stock = newStock
 		product.LastRestock = now
 	}
