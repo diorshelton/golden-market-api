@@ -39,7 +39,6 @@ func handleRegistrationForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(resp)
-	fmt.Fprint(w, username, email, password)
 }
 
 func marketServer() http.Handler {
