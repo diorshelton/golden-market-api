@@ -1,25 +1,45 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 )
+
+type NewUser struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Message  string `json:"message"`
+}
 
 func handleSignIn(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "sign-in")
 }
 
 func handleRegister(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w,r, "./public/register.html")
+	http.ServeFile(w, r, "./public/register.html")
 }
 
 func handleRegistrationForm(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+
+	err := r.ParseForm()
+	if err != nil {
+		fmt.Fprintf(w, "An error occurred: %v", err)
+	}
+
 	username := r.Form.Get("username")
 	email := r.Form.Get("e-mail")
 	password := r.Form.Get("password")
-	fmt.Fprintf(w,"Email: %v, PW:%v, Username:%v,",email, password, username)
+
+	resp := NewUser{
+		Username: username,
+		Email:    email,
+		Message:  "registration successful",
+	}
+
+	json.NewEncoder(w).Encode(resp)
+	fmt.Fprint(w, username, email, password)
 }
 
 func marketServer() http.Handler {
@@ -27,12 +47,12 @@ func marketServer() http.Handler {
 	mux.HandleFunc("GET /sign-in", handleSignIn)
 	mux.HandleFunc("GET /register", handleRegister)
 	mux.HandleFunc("POST /register", handleRegistrationForm)
-	return  mux
+	return mux
 }
 
 func main() {
 	s := &http.Server{
-		Addr: ":3000",
+		Addr:    ":3000",
 		Handler: marketServer(),
 	}
 	log.Printf("Running sever on port%v", s.Addr)

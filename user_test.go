@@ -1,40 +1,39 @@
 package main
 
 import (
-	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
 func TestCreateUser(t *testing.T) {
-	server := marketServer()
-	t.Run("Create new user", func(t *testing.T) {
-		request := httptest.NewRequest(http.MethodPost, "/register", nil)
+	t.Run("Retrieves form data", func(t *testing.T) {
+		form := "username=testuser&e-mail=test@example.com&password=secret"
+
+		//Build request
+		request := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader(form))
+		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		//Capture response
 		recorder := httptest.NewRecorder()
 
-		server.ServeHTTP(recorder,request)
+		//Call handler
+		handleRegistrationForm(recorder, request)
 
-		got := recorder.Body.String()
-		want := "sign-in"
+		var resp NewUser
 
-		if got != want {
-			t.Errorf("Got %v, want %v", got, want)
+		if err := json.NewDecoder(recorder.Body).Decode(&resp); err != nil {
+			t.Fatalf("failed to parse response %v", err)
+		}
+
+		if resp.Message != "registration successful" {
+			t.Errorf("expected username %q, got %q", "testuser", resp.Username)
 		}
 	})
 	t.Run("Email not already being used", func(t *testing.T) {
 
-	// 	request, _ := http.NewRequest(http.MethodPost, "/register", nil)
-	// 	recorder := httptest.NewRecorder()
-
-	// 	server.ServeHTTP(recorder,request)
-
-	// 	got := recorder.Body.String()
-	// 	want := "sign-in"
-
-	// 	if got != want {
-	// 		t.Errorf("Got %v but want %v",got, want)
-	// 	}
 	})
 }
 func TestPasswordHashing(t *testing.T) {
