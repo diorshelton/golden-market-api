@@ -1,45 +1,44 @@
 package main
 
 import (
+	"reflect"
 	"testing"
+	// "time"
 )
 
+// Test transaction creation with correct buyer, vendor, product, quantity and total price
 func TestCreateTransaction(t *testing.T) {
-	//Test transaction creation with correct buyer, vendor, product, quantity, total price
-	sonny := Vendor{ID: 1, Name: "Sonny", IsNPC: true}
-	tomoyo := User{ID: 27, Username: "tomoyo", Balance: 1000}
+	t.Run("Create transaction with fields: buyer, vender, product quantity and total price", func(t *testing.T) {
 
-	bacon := Product{ID: 93, Name: "bacon", Price: 9, Stock: 475, VendorID: 1}
-	sweetPotato := Product{ID: 1, Name: "sweet potato", Price: 4, Stock: 54, VendorID: 1}
+		sonny := Vendor{ID: 1}
+		tomoyo := User{ID: 27, Username: "tomoyo", Balance: 1000}
 
-	item1 := PurchaseItem{&sweetPotato, 6}
-	item2 := PurchaseItem{&bacon, 6}
+		bacon := Product{ID: 93, Name: "bacon", Price: 9, Stock: 475, VendorID: sonny.ID}
+		sweetPotato := Product{ID: 1, Name: "sweet potato", Price: 4, Stock: 54, VendorID: sonny.ID}
 
-	purchases := []PurchaseItem{item1, item2}
+		purchases := []PurchaseItem{
+			{Product: &sweetPotato, Quantity: 6},
+			{Product: &bacon, Quantity: 6},
+		}
 
-	got := CreateTransaction(&tomoyo, purchases)
+		got := CreateTransaction(&tomoyo, purchases)
 
-	if got.BuyerID != tomoyo.ID {
-		t.Errorf("Expected buyerID of %v but got %v", tomoyo.ID, got.BuyerID)
-	}
+		want := &Transaction{
+			BuyerID:  27,
+			VendorID: 1,
+			Items: []TransactionItem{
+				{ProductID: sweetPotato.ID, Quantity: 6, Subtotal: 24},
+				{ProductID: bacon.ID, Quantity: 6, Subtotal: 54},
+			},
+			TotalPrice: 78,
+		}
 
-	if got.VendorID != sonny.ID {
-		t.Errorf("Expected vendorID of %v but got %v", sonny.ID, got.VendorID)
-	}
-
-	if int(got.TotalPrice) != 78 {
-		t.Errorf("Expected 27 but got %v", got.TotalPrice)
-	}
-
-	if len(got.Items) != 2 {
-		t.Errorf("Expected 2 but got %v", len(got.Items))
-	}
-
-	if got.Items[0].Subtotal != 24 {
-		t.Errorf("Expected 24 but got %v", got.Items[0].Subtotal)
-	}
-
-	if got.Items[1].Subtotal != 54 {
-		t.Errorf("Expected 54 but got %v", got.Items[1].Subtotal)
-	}
+		// Compare only meaningful fields (ignore ID/TimeStamp)
+		if got.BuyerID != want.BuyerID ||
+			got.VendorID != want.VendorID ||
+			got.TotalPrice != want.TotalPrice ||
+			!reflect.DeepEqual(got.Items, want.Items) {
+			t.Errorf("\ngot:%+v\nwant:%+v", got, want)
+		}
+	})
 }

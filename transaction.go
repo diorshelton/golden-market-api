@@ -45,7 +45,7 @@ func CreateTransaction(buyer *User, purchases []PurchaseItem) *Transaction {
 		tx.Items = append(tx.Items, txItem)
 	}
 
-	tx.TimeStamp = time.Now()
+	// tx.TimeStamp = time.Now()
 
 	return &tx
 }
