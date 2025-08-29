@@ -19,7 +19,33 @@ type TransactionItem struct {
 	Subtotal  Coins `json:"subtotal"`
 }
 
-func CreateTransaction() Transaction {
-	var record Transaction
-	return record
+type PurchaseItem struct {
+	Product  *Product
+	Quantity int
+}
+
+func CreateTransaction(buyer *User, purchases []PurchaseItem) *Transaction {
+	tx := Transaction{}
+	tx.BuyerID = buyer.ID
+	tx.VendorID = purchases[0].Product.VendorID
+	tx.TotalPrice = 0
+	// var txTotal Coins = 0
+
+	for _, item := range purchases {
+		//Calculate subtotal and total for items
+		subTotal := item.Quantity * int(item.Product.Price)
+		tx.TotalPrice += Coins(subTotal)
+		//Build transaction item to add to Transaction struct
+		txItem := TransactionItem{
+			ProductID: item.Product.ID,
+			Quantity:  item.Quantity,
+			Subtotal:  Coins(subTotal),
+		}
+
+		tx.Items = append(tx.Items, txItem)
+	}
+
+	tx.TimeStamp = time.Now()
+
+	return &tx
 }
