@@ -3,12 +3,12 @@ package main
 import (
 	"reflect"
 	"testing"
-	// "time"
+	"time"
 )
 
-// Test transaction creation with correct buyer, vendor, product, quantity and total price
 func TestCreateTransaction(t *testing.T) {
-	t.Run("Create transaction with fields: buyer, vender, product quantity and total price", func(t *testing.T) {
+	t.Run("Create transaction with fields: buyer, vendor, product quantity and total price", func(t *testing.T) {
+		// Test transaction creation with correct buyer, vendor, product, quantity and total price
 
 		sonny := Vendor{ID: 1}
 		tomoyo := User{ID: 27, Username: "tomoyo", Balance: 1000}
@@ -32,13 +32,41 @@ func TestCreateTransaction(t *testing.T) {
 			},
 			TotalPrice: 78,
 		}
-
-		// Compare only meaningful fields (ignore ID/TimeStamp)
+		// Compare fields but ignore ID/TimeStamp
 		if got.BuyerID != want.BuyerID ||
 			got.VendorID != want.VendorID ||
 			got.TotalPrice != want.TotalPrice ||
 			!reflect.DeepEqual(got.Items, want.Items) {
 			t.Errorf("\ngot:%+v\nwant:%+v", got, want)
+		}
+	})
+	t.Run("Check if TimeStamp exists", func(t *testing.T) {
+
+		sonny := Vendor{ID: 1}
+		dandara := User{ID: 1654, Username: "dandara", Balance: 4000}
+
+		tambourine := Product{ID: 93, Name: "tambourine", Price: 54, Stock: 475, VendorID: sonny.ID}
+
+		drum := Product{ID: 1, Name: "drum", Price: 94, Stock: 353, VendorID: sonny.ID}
+
+		purchases := []PurchaseItem{
+			{Product: &tambourine, Quantity: 3},
+			{Product: &drum, Quantity: 1},
+		}
+
+		trx := CreateTransaction(&dandara, purchases)
+
+		if trx.TimeStamp.IsZero() {
+			t.Errorf("expected timestamp to be set but got zero %v", trx.TimeStamp)
+		}
+
+		now := time.Now().UTC()
+		if trx.TimeStamp.Before(now.Add(-2*time.Second)) || trx.TimeStamp.After(now.Add(2*time.Second)) {
+			t.Errorf("timestamp not within 2 second range, got %v, expected around %v", trx.TimeStamp, now)
+		}
+
+		if trx.TimeStamp.Location() != time.UTC {
+			t.Errorf("timestamp not stored in UTC, got %v", trx.TimeStamp.Location())
 		}
 	})
 }

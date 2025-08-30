@@ -25,27 +25,24 @@ type PurchaseItem struct {
 }
 
 func CreateTransaction(buyer *User, purchases []PurchaseItem) *Transaction {
-	tx := Transaction{}
-	tx.BuyerID = buyer.ID
-	tx.VendorID = purchases[0].Product.VendorID
-	tx.TotalPrice = 0
-	// var txTotal Coins = 0
+	var items []TransactionItem
+	var total Coins
 
-	for _, item := range purchases {
-		//Calculate subtotal and total for items
-		subTotal := item.Quantity * int(item.Product.Price)
-		tx.TotalPrice += Coins(subTotal)
-		//Build transaction item to add to Transaction struct
-		txItem := TransactionItem{
-			ProductID: item.Product.ID,
-			Quantity:  item.Quantity,
-			Subtotal:  Coins(subTotal),
-		}
-
-		tx.Items = append(tx.Items, txItem)
+	for _, p := range purchases {
+		subTotal := Coins(p.Quantity * int(p.Product.Price))
+		items = append(items, TransactionItem{
+			ProductID: p.Product.ID,
+			Quantity:  p.Quantity,
+			Subtotal:  subTotal,
+		})
+		total += subTotal
 	}
 
-	// tx.TimeStamp = time.Now()
-
-	return &tx
+	return &Transaction{
+		BuyerID:    buyer.ID,
+		VendorID:   purchases[0].Product.VendorID,
+		Items:      items,
+		TotalPrice: total,
+		TimeStamp:  time.Now().UTC(),
+	}
 }
