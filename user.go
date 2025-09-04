@@ -1,8 +1,9 @@
 package main
 
 import (
-	"golang.org/x/crypto/bcrypt"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -12,13 +13,14 @@ type User struct {
 	LastName    string    `json:"last_name"`
 	DateOfBirth time.Time `json:"date_of_birth"`
 	Email       string    `json:"email"`
-	Password    string    `json:"-"`
+	Password    string    `json:"password"`
 	Balance     Coins     `json:"balance"`
 	Inventory   []Item    `json:"inventory,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-func CreateUser() {}
+func CreateNewUser( *User) {
+}
 
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

@@ -11,12 +11,14 @@ import (
 )
 
 func TestCreateUser(t *testing.T) {
-	t.Run("POST request should return form data", func(t *testing.T) {
-		form := "username=testuser&e-mail=test@example.co.jp&password=secret"
 
-		//Build request
-		request := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader(form))
-		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	form := "username=testuser&e-mail=test@example.co.jp&password=secret"
+
+	//Build request
+	request := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader(form))
+
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	t.Run("POST request should return form data", func(t *testing.T) {
 
 		//Capture response
 		recorder := httptest.NewRecorder()
@@ -24,7 +26,7 @@ func TestCreateUser(t *testing.T) {
 		//Call handler
 		handleRegistrationForm(recorder, request)
 
-		var resp NewUser
+		var resp User
 
 		if err := json.NewDecoder(recorder.Body).Decode(&resp); err != nil {
 			t.Fatalf("failed to parse response %v", err)
@@ -42,7 +44,26 @@ func TestCreateUser(t *testing.T) {
 		}
 
 	})
+
+	t.Run("should create a new user", func(t *testing.T) {
+		recorder := httptest.NewRecorder()
+
+		handleRegistrationForm(recorder, request)
+
+		var resp User
+
+		if err := json.NewDecoder(recorder.Body).Decode(&resp); err != nil {
+			t.Fatalf("failed to parse response: %v", err)
+		}
+
+		CreateNewUser(&resp)
+
+		if len(userStore) = 0 {
+			t.Errorf("Expected a new user from %+v but did not get one", resp)
+		}
+	})
 }
+
 func TestPasswordHashing(t *testing.T) {
 	password := "secret123"
 	hash, err := HashPassword(password)
