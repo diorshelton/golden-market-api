@@ -18,7 +18,7 @@ type User struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-// func (*User) createUser(){}
+func CreateUser() {}
 
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

@@ -2,15 +2,17 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/mail"
 	"strings"
 	"testing"
 )
 
 func TestCreateUser(t *testing.T) {
-	t.Run("Retrieves form data", func(t *testing.T) {
-		form := "username=testuser&e-mail=test@example.com&password=secret"
+	t.Run("POST request should return form data", func(t *testing.T) {
+		form := "username=testuser&e-mail=test@example.co.jp&password=secret"
 
 		//Build request
 		request := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader(form))
@@ -28,11 +30,16 @@ func TestCreateUser(t *testing.T) {
 			t.Fatalf("failed to parse response %v", err)
 		}
 
-		if resp.Message != "registration successful" {
-			t.Errorf("expected username %q, got %q", "testuser", resp.Username)
+		if resp.Username != "testuser" {
+			t.Errorf("expected username 'testuser' but got %q,", resp.Username)
 		}
-	})
-	t.Run("Email not already being used", func(t *testing.T) {
+
+		email, err := mail.ParseAddress(resp.Email)
+
+		if err != nil {
+			log.Printf("Expected valid email address but got %v", email)
+			log.Fatal(err)
+		}
 
 	})
 }

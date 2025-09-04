@@ -11,6 +11,7 @@ type NewUser struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Message  string `json:"message"`
+	Password string
 }
 
 func handleSignIn(w http.ResponseWriter, r *http.Request) {
@@ -22,7 +23,6 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleRegistrationForm(w http.ResponseWriter, r *http.Request) {
-
 	err := r.ParseForm()
 	if err != nil {
 		fmt.Fprintf(w, "An error occurred: %v", err)
@@ -32,13 +32,15 @@ func handleRegistrationForm(w http.ResponseWriter, r *http.Request) {
 	email := r.Form.Get("e-mail")
 	password := r.Form.Get("password")
 
-	resp := NewUser{
+	user := NewUser{
 		Username: username,
 		Email:    email,
 		Message:  "registration successful",
+		Password: password,
 	}
 
-	json.NewEncoder(w).Encode(resp)
+	json.NewEncoder(w).Encode(user)
+	// fmt.Println(w, userData)
 }
 
 func marketServer() http.Handler {
