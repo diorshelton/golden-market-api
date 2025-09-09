@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/mail"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -52,44 +53,21 @@ func TestCreateUser(t *testing.T) {
 			t.Fatalf("failed to parse response %v", err)
 		}
 
-		timeString := "1993-09-14"
-		time, err := time.Parse(time.DateOnly, timeString)
+		dobString := "1993-09-14"
+		dob, err := time.Parse(time.DateOnly, dobString)
 
 		if err != nil {
-			t.Errorf("error parsing time string %v", err)
+			t.Fatalf("error parsing time string %v", err)
 		}
 
-		want := User{Username: "testuser", FirstName: "test", LastName: "user", Email: "test@example.co.jp", Password: "secret", DateOfBirth: time}
+		want := User{Username: "testuser", FirstName: "test", LastName: "user", Email: "test@example.co.jp", Password: "secret", DateOfBirth: dob}
 
-		if resp.Username != want.Username {
-			t.Errorf("wrong username input")
-		}
-		if resp.FirstName != want.FirstName {
-			t.Errorf("wrong firstName input")
-		}
-		if resp.LastName != want.LastName {
-			t.Errorf("wrong lastName input")
-		}
-		if resp.Email != want.Email {
-			t.Errorf("wrong Email input")
-		}
-		if resp.Password != want.Password {
-			t.Errorf("wrong password input")
-		}
-		if resp.DateOfBirth != want.DateOfBirth {
-			t.Errorf("wrong DOB input, %+v", resp.DateOfBirth)
-		}
-
-		if resp.Username != "testuser" {
-			t.Errorf("expected username 'testuser' but got %q,", resp.Username)
+		if !reflect.DeepEqual(want, resp) {
+			t.Fatalf("\nStructs don't match\n got: %v\nwant: %v", want.Username, resp.Username)
 		}
 
 		if _, err := mail.ParseAddress(resp.Email); err != nil {
 			t.Errorf("Expected valid email address but got %q: %v", resp.Email, err)
-		}
-
-		if resp.FirstName == " " {
-			t.Errorf("Expected valid first name field %v", resp.FirstName)
 		}
 	})
 
