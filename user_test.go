@@ -32,7 +32,7 @@ func setupTestUserDB(t *testing.T) *sql.DB {
 }
 
 func TestCreateUser(t *testing.T) {
-	form := "username=testuser&first_name=test&last_name=user&email=test@example.co.jp&password=secret&password_confirm=secret&date_of_birth=2006-01-02"
+	form := "username=testuser&first_name=test&last_name=user&email=test@example.co.jp&password=secret&password_confirm=secret&date_of_birth=1993-09-14"
 
 	//Build request
 	request := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader(form))
@@ -52,8 +52,9 @@ func TestCreateUser(t *testing.T) {
 			t.Fatalf("failed to parse response %v", err)
 		}
 
-		timeString := "2006-01-02"
-		time, err := time.Parse(timeString, timeString)
+		timeString := "1993-09-14"
+		time, err := time.Parse(time.DateOnly, timeString)
+
 		if err != nil {
 			t.Errorf("error parsing time string %v", err)
 		}
