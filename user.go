@@ -19,7 +19,7 @@ type User struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-func CreateNewUser( *User) {
+func CreateNewUser(*User) {
 }
 
 func HashPassword(password string) (string, error) {

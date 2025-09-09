@@ -1,8 +1,8 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/mail"
@@ -10,14 +10,34 @@ import (
 	"testing"
 )
 
-func TestCreateUser(t *testing.T) {
+func setupTestUserDB(t *testing.T) *sql.DB {
+	db, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatalf("failed to open db: %v", err)
+	}
 
-	form := "username=testuser&e-mail=test@example.co.jp&password=secret"
+	_, err = db.Exec(`CREATE TABLE users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL,
+				email TEXT NOT NULL UNIQUE,
+				password TEXT NOT NULL,
+        balance INTEGER NOT NULL DEFAULT 0
+    )`)
+	if err != nil {
+		t.Fatalf("failed to create table: %v", err)
+	}
+
+	return db
+}
+
+func TestCreateUser(t *testing.T) {
+	form := "username=testuser&email=test@example.co.jp&password=secret"
 
 	//Build request
 	request := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader(form))
 
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
 	t.Run("POST request should return form data", func(t *testing.T) {
 
 		//Capture response
@@ -36,30 +56,39 @@ func TestCreateUser(t *testing.T) {
 			t.Errorf("expected username 'testuser' but got %q,", resp.Username)
 		}
 
-		email, err := mail.ParseAddress(resp.Email)
-
-		if err != nil {
-			log.Printf("Expected valid email address but got %v", email)
-			log.Fatal(err)
+		if _,err := mail.ParseAddress(resp.Email); err != nil {
+			t.Errorf("Expected valid email address but got %q: %v", resp.Email, err)
 		}
-
 	})
 
-	t.Run("should create a new user", func(t *testing.T) {
+	t.Run("should create a new user from http response", func(t *testing.T) {
 		recorder := httptest.NewRecorder()
-
 		handleRegistrationForm(recorder, request)
+		var testUser User
 
-		var resp User
-
-		if err := json.NewDecoder(recorder.Body).Decode(&resp); err != nil {
+		if err := json.NewDecoder(recorder.Body).Decode(&testUser); err != nil {
 			t.Fatalf("failed to parse response: %v", err)
 		}
 
-		CreateNewUser(&resp)
+		db := setupTestUserDB(t)
+		defer db.Close()
+		repo := &SQLiteUserRepo{db:db}
 
-		if len(userStore) = 0 {
-			t.Errorf("Expected a new user from %+v but did not get one", resp)
+		if err := repo.CreateUser(&testUser); err != nil {
+			t.Fatalf("failed to create user: %v\n, %+v", err, testUser)
+		}
+
+		if testUser.ID == 0 {
+			t.Errorf("expected non-zero ID after insert")
+		}
+
+		got, err := repo.GetUser(testUser.ID)
+		if err != nil {
+			t.Fatalf("failed to get user:%v", err)
+		}
+
+		if got.Username != testUser.Username || got.Email != testUser.Email || got.Password != testUser.Password {
+			t.Errorf("got %+v\n, want %+v,", got, testUser)
 		}
 	})
 }

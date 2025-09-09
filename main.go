@@ -40,7 +40,7 @@ func handleRegistrationForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	username := r.Form.Get("username")
-	email := r.Form.Get("e-mail")
+	email := r.Form.Get("email")
 	password := r.Form.Get("password")
 
 	user := User{
