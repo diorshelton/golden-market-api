@@ -8,6 +8,7 @@ import (
 	"net/mail"
 	"strings"
 	"testing"
+	"time"
 )
 
 func setupTestUserDB(t *testing.T) *sql.DB {
@@ -31,7 +32,7 @@ func setupTestUserDB(t *testing.T) *sql.DB {
 }
 
 func TestCreateUser(t *testing.T) {
-	form := "username=testuser&email=test@example.co.jp&password=secret"
+	form := "username=testuser&first_name=test&last_name=user&email=test@example.co.jp&password=secret&password_confirm=secret&date_of_birth=2006-01-02"
 
 	//Build request
 	request := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader(form))
@@ -47,17 +48,47 @@ func TestCreateUser(t *testing.T) {
 		handleRegistrationForm(recorder, request)
 
 		var resp User
-
 		if err := json.NewDecoder(recorder.Body).Decode(&resp); err != nil {
 			t.Fatalf("failed to parse response %v", err)
+		}
+
+		timeString := "2006-01-02"
+		time, err := time.Parse(timeString, timeString)
+		if err != nil {
+			t.Errorf("error parsing time string %v", err)
+		}
+
+		want := User{Username: "testuser", FirstName: "test", LastName: "user", Email: "test@example.co.jp", Password: "secret", DateOfBirth: time}
+
+		if resp.Username != want.Username {
+			t.Errorf("wrong username input")
+		}
+		if resp.FirstName != want.FirstName {
+			t.Errorf("wrong firstName input")
+		}
+		if resp.LastName != want.LastName {
+			t.Errorf("wrong lastName input")
+		}
+		if resp.Email != want.Email {
+			t.Errorf("wrong Email input")
+		}
+		if resp.Password != want.Password {
+			t.Errorf("wrong password input")
+		}
+		if resp.DateOfBirth != want.DateOfBirth {
+			t.Errorf("wrong DOB input, %+v", resp.DateOfBirth)
 		}
 
 		if resp.Username != "testuser" {
 			t.Errorf("expected username 'testuser' but got %q,", resp.Username)
 		}
 
-		if _,err := mail.ParseAddress(resp.Email); err != nil {
+		if _, err := mail.ParseAddress(resp.Email); err != nil {
 			t.Errorf("Expected valid email address but got %q: %v", resp.Email, err)
+		}
+
+		if resp.FirstName == " " {
+			t.Errorf("Expected valid first name field %v", resp.FirstName)
 		}
 	})
 
@@ -72,7 +103,7 @@ func TestCreateUser(t *testing.T) {
 
 		db := setupTestUserDB(t)
 		defer db.Close()
-		repo := &SQLiteUserRepo{db:db}
+		repo := &SQLiteUserRepo{db: db}
 
 		if err := repo.CreateUser(&testUser); err != nil {
 			t.Fatalf("failed to create user: %v\n, %+v", err, testUser)
