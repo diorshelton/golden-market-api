@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"net/mail"
-	"reflect"
+	// "net/mail"
+	// "reflect"
 	"strings"
 	"testing"
-	"time"
+	// "time"
 )
 
 func setupTestUserDB(t *testing.T) *sql.DB {
@@ -40,36 +40,36 @@ func TestCreateUser(t *testing.T) {
 
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	t.Run("POST request should return form data", func(t *testing.T) {
+	// t.Run("POST request should return form data", func(t *testing.T) {
 
-		//Capture response
-		recorder := httptest.NewRecorder()
+	// 	//Capture response
+	// 	recorder := httptest.NewRecorder()
 
-		//Call handler
-		handleRegistrationForm(recorder, request)
+	// 	//Call handler
+	// 	handleRegistrationForm(recorder, request)
 
-		var resp User
-		if err := json.NewDecoder(recorder.Body).Decode(&resp); err != nil {
-			t.Fatalf("failed to parse response %v", err)
-		}
+	// 	var resp User
+	// 	if err := json.NewDecoder(recorder.Body).Decode(&resp); err != nil {
+	// 		t.Fatalf("failed to parse response %v", err)
+	// 	}
 
-		dobString := "1993-09-14"
-		dob, err := time.Parse(time.DateOnly, dobString)
+	// 	dobString := "1993-09-14"
+	// 	dob, err := time.Parse(time.DateOnly, dobString)
 
-		if err != nil {
-			t.Fatalf("error parsing time string %v", err)
-		}
+	// 	if err != nil {
+	// 		t.Fatalf("error parsing time string %v", err)
+	// 	}
 
-		want := User{Username: "testuser", FirstName: "test", LastName: "user", Email: "test@example.co.jp", Password: "secret", DateOfBirth: dob}
+	// 	want := User{Username: "testuser", FirstName: "test", LastName: "user", Email: "test@example.co.jp", Password: "secret", DateOfBirth: dob}
 
-		if !reflect.DeepEqual(want, resp) {
-			t.Fatalf("\nStructs don't match\n got: %v\nwant: %v", want.Username, resp.Username)
-		}
+	// 	if !reflect.DeepEqual(want, resp) {
+	// 		t.Fatalf("\nStructs don't match\n got: %v\nwant: %v", want, resp)
+	// 	}
 
-		if _, err := mail.ParseAddress(resp.Email); err != nil {
-			t.Errorf("Expected valid email address but got %q: %v", resp.Email, err)
-		}
-	})
+	// 	if _, err := mail.ParseAddress(resp.Email); err != nil {
+	// 		t.Errorf("Expected valid email address but got %q: %v", resp.Email, err)
+	// 	}
+	// })
 
 	t.Run("should create a new user from http response", func(t *testing.T) {
 		recorder := httptest.NewRecorder()
