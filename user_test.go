@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+
 	// "net/mail"
 	// "reflect"
 	"strings"
@@ -33,10 +34,10 @@ func setupTestUserDB(t *testing.T) *sql.DB {
 }
 
 func TestCreateUser(t *testing.T) {
-	form := "username=testuser&first_name=test&last_name=user&email=test@example.co.jp&password=secret&password_confirm=secret&date_of_birth=1993-09-14"
+	registrationInput := "username=testuser&first_name=test&last_name=user&email=test@example.co.jp&password=secret&password_confirm=secret&date_of_birth=1993-09-14"
 
-	//Build request
-	request := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader(form))
+	//Declare request
+	request := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader(registrationInput))
 
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -48,6 +49,7 @@ func TestCreateUser(t *testing.T) {
 	// 	//Call handler
 	// 	handleRegistrationForm(recorder, request)
 
+	//	//Decode json response
 	// 	var resp User
 	// 	if err := json.NewDecoder(recorder.Body).Decode(&resp); err != nil {
 	// 		t.Fatalf("failed to parse response %v", err)
@@ -74,6 +76,7 @@ func TestCreateUser(t *testing.T) {
 	t.Run("should create a new user from http response", func(t *testing.T) {
 		recorder := httptest.NewRecorder()
 		handleRegistrationForm(recorder, request)
+
 		var testUser User
 
 		if err := json.NewDecoder(recorder.Body).Decode(&testUser); err != nil {
@@ -100,6 +103,38 @@ func TestCreateUser(t *testing.T) {
 		if got.Username != testUser.Username || got.Email != testUser.Email || got.Password != testUser.Password {
 			t.Errorf("got %+v\n, want %+v,", got, testUser)
 		}
+	})
+	t.Run("username and email must be unique", func(t *testing.T) {
+
+		formInput := "username=adventure1&first_name=finn&last_name=mertens&email=finMertens@advntrtm.com&password=enchiridion&password_confirm=enchiridion&date_of_birth=1993-09-14"
+
+		request := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader(formInput))
+
+		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		recorder := httptest.NewRecorder()
+
+		handleRegistrationForm(recorder, request)
+
+		var finn User
+
+		if err := json.NewDecoder(recorder.Body).Decode(&finn); err != nil {
+			t.Fatalf("failed to parse response: %v", err)
+		}
+
+		db := setupTestUserDB(t)
+		defer db.Close()
+		repo := &SQLiteUserRepo{db: db}
+
+		if err := repo.CreateUser(&finn); err != nil {
+			t.Fatalf("failed to create user: %v\n, %+v", err, finn)
+		}
+
+		got, err := repo.GetUser(finn.ID)
+		if err != nil {
+			t.Fatalf("failed to get user:%v", err)
+		}
+		t.Errorf("Got user: %v", got)
 	})
 }
 

@@ -66,8 +66,9 @@ func handleRegistrationForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := mail.ParseAddress(email); err != nil {
-		 http.Error(w, "invalid email address", http.StatusBadRequest)
+		http.Error(w, "invalid email address", http.StatusBadRequest)
 	}
+
 	password, err = HashPassword(password)
 
 	if err != nil {
