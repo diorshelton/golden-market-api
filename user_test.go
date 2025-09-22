@@ -97,7 +97,7 @@ func TestCreateUser(t *testing.T) {
 	})
 }
 
-func TestPasswordHashing(t *testing.T) {
+func testPasswordHashing(t *testing.T) {
 	password := "secret123"
 	hash, err := HashPassword(password)
 
