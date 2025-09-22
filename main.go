@@ -64,7 +64,7 @@ func handleRegistrationForm(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "invalid date format", http.StatusBadRequest)
 	}
-
+	// Validate email address
 	if _, err := mail.ParseAddress(email); err != nil {
 		http.Error(w, "invalid email address", http.StatusBadRequest)
 	}
