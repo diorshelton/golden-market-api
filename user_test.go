@@ -49,7 +49,7 @@ func TestCreateUser(t *testing.T) {
 			t.Fatalf("FirstName not equal: want %v, got %v", want.FirstName, resp.FirstName)
 		}
 
-		if want.LastName != resp.LastName{
+		if want.LastName != resp.LastName {
 			t.Fatalf("Last Name not equal want %v got %v", want.LastName, resp.LastName)
 		}
 
@@ -57,7 +57,7 @@ func TestCreateUser(t *testing.T) {
 			t.Fatalf("Email not equal want %v got %v", want.Email, resp.Email)
 		}
 
-		if want.DateOfBirth != resp.DateOfBirth{
+		if want.DateOfBirth != resp.DateOfBirth {
 			t.Fatalf("DOB not equal want %v got %v", want.DateOfBirth, resp.DateOfBirth)
 		}
 	})
@@ -95,6 +95,12 @@ func TestCreateUser(t *testing.T) {
 			t.Errorf("got %+v\n, want %+v,", got, testUser)
 		}
 	})
+	t.Run("username and email must be unique", func(t *testing.T) {
+		// formInput :="username=testuser&first_name=test&last_name=user&email=test@example.co.jp&password=secret&password_confirm=secret&date_of_birth=1993-09-14"
+
+		// formInput2 :="username=adventure1&first_name=finn&last_name=mertens&email=finMertens@advntrtm.com&password=enchiridion&password_confirm=enchiridion&date_of_birth=1993-09-14"
+
+	})
 }
 
 func TestPasswordHashing(t *testing.T) {
@@ -123,6 +129,7 @@ func setupTestUserDB(t *testing.T) *sql.DB {
 	_, err = db.Exec(`CREATE TABLE users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL,
+				date_of_birth DATE NOT NULL,
 				email TEXT NOT NULL UNIQUE,
 				password TEXT NOT NULL,
         balance INTEGER NOT NULL DEFAULT 0
