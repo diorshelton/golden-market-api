@@ -34,3 +34,50 @@ func (r *SQLiteUserRepo) GetUser(id int) (*User, error) {
 	}
 	return &u, nil
 }
+
+func (r *SQLiteUserRepo) GetAllUsers() ([]User, error) {
+	rows, err := 	r.db.Query(`SELECT id, username, first_name, last_name, date_of_birth, email, password, balance, created_at FROM users`)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []User
+	for rows.Next() {
+		var u User
+		var dob sql.NullTime
+		var createdAt sql.NullTime
+
+		err = rows.Scan(
+			&u.ID,
+			&u.Username,
+			&u.FirstName,
+			&u.LastName,
+			&dob,
+			&u.Email,
+			&u.Password,
+			&u.Balance,
+			&u.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if dob.Valid {
+			u.DateOfBirth = dob.Time
+		}
+		if createdAt.Valid {
+			u.CreatedAt = createdAt.Time
+		}
+
+		users = append(users, u)
+
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return  users, nil
+}

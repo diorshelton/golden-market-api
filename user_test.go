@@ -18,6 +18,11 @@ func TestCreateUser(t *testing.T) {
 
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
+	db := setupTestUserDB(t)
+
+	defer db.Close()
+	repo := &SQLiteUserRepo{db: db}
+
 	t.Run("POST request to form registration handler should return correct data", func(t *testing.T) {
 		//Capture response
 		recorder := httptest.NewRecorder()
@@ -72,11 +77,7 @@ func TestCreateUser(t *testing.T) {
 			t.Fatalf("failed to parse response: %v", err)
 		}
 
-		db := setupTestUserDB(t)
-
-		defer db.Close()
-		repo := &SQLiteUserRepo{db: db}
-
+		//Create User in database
 		if err := repo.CreateUser(&testUser); err != nil {
 			t.Fatalf("failed to create user: %v\n, %+v", err, testUser)
 		}
@@ -96,10 +97,27 @@ func TestCreateUser(t *testing.T) {
 		}
 	})
 	t.Run("username and email must be unique", func(t *testing.T) {
-		// formInput :="username=testuser&first_name=test&last_name=user&email=test@example.co.jp&password=secret&password_confirm=secret&date_of_birth=1993-09-14"
 
-		// formInput2 :="username=adventure1&first_name=finn&last_name=mertens&email=finMertens@advntrtm.com&password=enchiridion&password_confirm=enchiridion&date_of_birth=1993-09-14"
+		formInput2 :=
+			"username=testuser&first_name=finn&last_name=mertens&email=finMertens@advntrtm.com&password=enchiridion&password_confirm=enchiridion&date_of_birth=1993-09-14"
 
+		request2 := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader(formInput2))
+
+		request2.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		recorder2 := httptest.NewRecorder()
+
+		handleRegistrationForm(recorder2, request2)
+
+		var testUser2 User
+
+		if err := json.NewDecoder(recorder2.Body).Decode(&testUser2); err != nil {
+			t.Fatalf("failed to parse response %v", err)
+		}
+
+		if err := repo.CreateUser(&testUser2); err == nil {
+			t.Errorf("Did not receive duplicate username error but should have:%v", testUser2)
+		}
 	})
 }
 
@@ -128,7 +146,7 @@ func setupTestUserDB(t *testing.T) *sql.DB {
 
 	_, err = db.Exec(`CREATE TABLE users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT NOT NULL,
+        username TEXT NOT NULL UNIQUE,
 				first_name TEXT NOT NULL,
 				last_name TEXT NOT NULL,
 				date_of_birth DATE NOT NULL,
