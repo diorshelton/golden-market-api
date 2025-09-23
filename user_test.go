@@ -129,10 +129,13 @@ func setupTestUserDB(t *testing.T) *sql.DB {
 	_, err = db.Exec(`CREATE TABLE users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL,
+				first_name TEXT NOT NULL,
+				last_name TEXT NOT NULL,
 				date_of_birth DATE NOT NULL,
 				email TEXT NOT NULL UNIQUE,
 				password TEXT NOT NULL,
-        balance INTEGER NOT NULL DEFAULT 0
+        balance INTEGER NOT NULL DEFAULT 0,
+				created_at DATE
     )`)
 	if err != nil {
 		t.Fatalf("failed to create table: %v", err)

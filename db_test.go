@@ -18,9 +18,12 @@ func setupTestDB(t *testing.T) *sql.DB {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
 				date_of_birth DATE NOT NULL,
         username TEXT NOT NULL,
+				first_name TEXT NOT NULL,
+				last_name TEXT NOT NULL,
         balance INTEGER DEFAULT 0,
 				email TEXT NOT NULL UNIQUE,
-				password TEXT NOT NULL UNIQUE
+				password TEXT NOT NULL,
+				created_at DATE NOT NULL
     );`)
 	if err != nil {
 		t.Fatalf("failed to create table: %v", err)
@@ -33,18 +36,23 @@ func TestSQLiteUserRepo_CreateAndGetUser(t *testing.T) {
 	db := setupTestDB(t)
 	repo := &SQLiteUserRepo{db: db}
 
-	now := time.Now().UTC()
+	//Test User
+	var user = &User{Username: "tomoyo1", FirstName: "Tomoyo", LastName: "Daidouji", Email: "daito@gmail.com.jp"}
 
-	dobString := "1993-09-03"
-	DateOnly := "2006-01-02"
-
-	dob, err := time.Parse(DateOnly, dobString)
-
+	// Convert time from string to time.Time type
+	dob, err := time.Parse("2006-01-02", "1993-09-03")
 	if err != nil {
-		t.Fatalf("An error occurred %v", err)
+		t.Errorf("An error occurred: %v", err)
 	}
 
-	user := &User{Username: "tomoyo1", FirstName: "Tomoyo", LastName: "Daidouji", DateOfBirth: dob, Email: "daito@gmail.com.jp", Password: "password", CreatedAt: now}
+	//Add to struct
+	user.DateOfBirth = dob
+	user.CreatedAt = time.Now().UTC()
+
+	user.Password, err = HashPassword("password")
+	if err != nil {
+		t.Errorf("An error occurred while hashing password: %v", err)
+	}
 
 	if err := repo.CreateUser(user); err != nil {
 		t.Fatalf("failed to create user: %v", err)
@@ -63,11 +71,15 @@ func TestSQLiteUserRepo_CreateAndGetUser(t *testing.T) {
 		t.Errorf("got %+v, want %+v", got, user)
 	}
 
-	// if got.FirstName == "" || got.LastName == "" || got.Username == ""|| got.Email == "" || got.Password == "" {
-	// 	t.Fatalf("User missing value %v", got)
-	// }
+	if got.Username == "" || got.FirstName == "" || got.LastName == "" || got.Email == "" || got.Password == "" {
+		t.Fatalf("User missing value %+v", got)
+	}
 
 	if got.DateOfBirth.IsZero() {
 		t.Errorf("Date of birth not set %v, want %v", got.DateOfBirth, dob)
+	}
+
+	if got.CreatedAt.IsZero() {
+		t.Errorf("Date of CreatedAt field not set, got: %v", got.CreatedAt)
 	}
 }
