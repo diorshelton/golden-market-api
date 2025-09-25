@@ -153,7 +153,7 @@ func setupTestUserDB(t *testing.T) *sql.DB {
 				email TEXT NOT NULL UNIQUE,
 				password TEXT NOT NULL,
         balance INTEGER NOT NULL DEFAULT 0,
-				created_at DATE
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`)
 	if err != nil {
 		t.Fatalf("failed to create table: %v", err)

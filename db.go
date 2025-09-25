@@ -12,7 +12,7 @@ type SQLiteUserRepo struct {
 }
 
 func (r *SQLiteUserRepo) CreateUser(u *User) error {
-	result, err := r.db.Exec("INSERT INTO users (username,first_name, last_name, date_of_birth, email, password, created_at) VALUES (?,?,?,?,?,?,?)", u.Username, u.FirstName, u.LastName, u.DateOfBirth, u.Email, u.Password, u.CreatedAt)
+	result, err := r.db.Exec("INSERT INTO users (username, first_name, last_name, email, password, date_of_birth, balance,created_at) VALUES (?,?,?,?,?,?,?,?)", u.Username, u.FirstName, u.LastName, u.Email, u.Password, u.DateOfBirth, u.Balance, u.CreatedAt)
 	if err != nil {
 		return err
 	}
@@ -36,7 +36,7 @@ func (r *SQLiteUserRepo) GetUser(id int) (*User, error) {
 }
 
 func (r *SQLiteUserRepo) GetAllUsers() ([]User, error) {
-	rows, err := 	r.db.Query(`SELECT id, username, first_name, last_name, date_of_birth, email, password, balance, created_at FROM users`)
+	rows, err := r.db.Query(`SELECT id, username, first_name, last_name, email, password, date_of_birth, balance, created_at FROM users`)
 
 	if err != nil {
 		return nil, err
@@ -79,5 +79,5 @@ func (r *SQLiteUserRepo) GetAllUsers() ([]User, error) {
 		return nil, err
 	}
 
-	return  users, nil
+	return users, nil
 }
