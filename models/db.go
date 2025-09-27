@@ -14,7 +14,7 @@ type SQLiteUserRepo struct {
 }
 
 func (r *SQLiteUserRepo) CreateUser(u *User) error {
-	result, err := r.db.Exec("INSERT INTO users (username, first_name, last_name, email, password, date_of_birth, balance,created_at) VALUES (?,?,?,?,?,?,?,?)", u.Username, u.FirstName, u.LastName, u.Email, u.Password, u.DateOfBirth, u.Balance, u.CreatedAt)
+	result, err := r.db.Exec("INSERT INTO users (username, first_name, last_name, email, password_hash, date_of_birth, balance,created_at) VALUES (?,?,?,?,?,?,?,?)", u.Username, u.FirstName, u.LastName, u.Email, u.PasswordHash, u.DateOfBirth, u.Balance, u.CreatedAt)
 	if err != nil {
 		return err
 	}

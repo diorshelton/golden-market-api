@@ -1,10 +1,8 @@
 package models
 
-
 import (
 	"errors"
 	"time"
-
 )
 
 type Product struct {

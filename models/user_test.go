@@ -1,4 +1,4 @@
-package models
+// package models
 
 import (
 	"database/sql"
@@ -9,10 +9,9 @@ import (
 	"testing"
 	"time"
 
-
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/diorshelton/golden-market/auth"
 	"github.com/diorshelton/golden-market/handlers"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func TestCreateUser(t *testing.T) {
@@ -138,7 +137,8 @@ func TestPasswordHashing(t *testing.T) {
 		t.Error("Hash should not be the same as password")
 	}
 
-	 err = auth.VerifyPassword(password, hash); if err != nil {
+	err = auth.VerifyPassword(password, hash)
+	if err != nil {
 		t.Error("Password check failed")
 	}
 }
