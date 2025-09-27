@@ -1,4 +1,4 @@
-package main
+package models
 
 import (
 	"database/sql"
@@ -8,6 +8,11 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/diorshelton/golden-market/auth"
+	"github.com/diorshelton/golden-market/handlers"
 )
 
 func TestCreateUser(t *testing.T) {
@@ -28,7 +33,7 @@ func TestCreateUser(t *testing.T) {
 		recorder := httptest.NewRecorder()
 
 		//Call handler
-		handleRegistrationForm(recorder, request)
+		handlers.HandleRegisterForm(recorder, request)
 
 		//Decoded json response
 		var resp User
@@ -69,7 +74,7 @@ func TestCreateUser(t *testing.T) {
 
 	t.Run("requests should create a new user in database", func(t *testing.T) {
 		recorder := httptest.NewRecorder()
-		handleRegistrationForm(recorder, request)
+		handlers.HandleRegisterForm(recorder, request)
 
 		var testUser User
 
@@ -107,7 +112,7 @@ func TestCreateUser(t *testing.T) {
 
 		recorder2 := httptest.NewRecorder()
 
-		handleRegistrationForm(recorder2, request2)
+		handlers.HandleRegisterForm(recorder2, request2)
 
 		var testUser2 User
 
@@ -123,7 +128,7 @@ func TestCreateUser(t *testing.T) {
 
 func TestPasswordHashing(t *testing.T) {
 	password := "secret123"
-	hash, err := HashPassword(password)
+	hash, err := auth.HashPassword(password)
 
 	if err != nil {
 		t.Fatalf("Failed to hash password: %v", err)
@@ -133,7 +138,7 @@ func TestPasswordHashing(t *testing.T) {
 		t.Error("Hash should not be the same as password")
 	}
 
-	if !CheckPasswordHash(password, hash) {
+	 err = auth.VerifyPassword(password, hash); if err != nil {
 		t.Error("Password check failed")
 	}
 }

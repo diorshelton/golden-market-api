@@ -1,8 +1,11 @@
-package main
+package models
 
-import "errors"
 
-import "time"
+import (
+	"errors"
+	"time"
+
+)
 
 type Product struct {
 	ID          int       `json:"id"`
