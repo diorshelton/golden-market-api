@@ -1,0 +1,28 @@
+    # Binaries for the current project
+    *.exe
+    *.dll
+    *.so
+    *.dylib
+    *.o
+
+    # Go build cache
+    /bin/
+    /pkg/
+    /build/
+
+    # Test output
+    *.test
+    *.out
+
+    # IDE-specific files (examples)
+    .idea/
+    .vscode/
+    *.sublime-workspace
+    *.iml
+
+    # Dependency vendor directory (if used)
+    /vendor/
+
+    # Environment variables or sensitive data
+    .env
+    *.env
