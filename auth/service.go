@@ -54,7 +54,7 @@ func (s *AuthService) Register(firstName, lastName, email, username, password st
 	}
 
 	//Create the user
-	user, err := s.userRepo.CreateUser(username, firstName , lastName, email, password)
+	user, err := s.userRepo.CreateUser(username, firstName , lastName, email, hashedPassword)
 	if err != nil {
 		return  nil,err
 	}
@@ -82,21 +82,22 @@ func (s *AuthService) Login (email, password string) (string, error) {
 	return  token, nil
 }
 
+//generateAccessToken creates a new JWT access token
 func (s *AuthService) generateAccessToken(user *models.User) (string, error) {
 	// Set the expiration time
 	expirationTime := time.Now().Add(s.accessTokenTTL)
 
 	// Create the JWT claims
 	claims := jwt.MapClaims{
-		"sub": user.ID.String(),
-		"username": user.Username,
-		"email": user.Email,
-		"exp": expirationTime.UTC(),
-		"iat": time.Now().UTC(),
+		"sub": user.ID.String(), // subject (user ID)
+		"username": user.Username, // custom claim
+		"email": user.Email, // custom claim
+		"exp": expirationTime.UTC(), // expiration time
+		"iat": time.Now().UTC(), // issued at time
 	}
 
 	// Create the token with claims
-	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	// Sign the token with secret key
 	tokenString, err := token.SignedString(s.jwtSecret)
@@ -130,4 +131,63 @@ func (s *AuthService) ValidateToken(tokenString string) (jwt.MapClaims, error) {
 		return claims, nil
 	}
 	return nil, ErrInvalidToken
+}
+
+// LoginWithRefresh authenticates a user and returns both access and refresh tokens
+func (s *AuthService) LoginWithRefresh(email, password string, refreshTokenTTL time.Duration) (accessToken string, refreshToken string, err error) {
+	// Get the user from the database
+	user, err := s.userRepo.GetUserByEmail(email)
+	if err != nil {
+		return "", "", ErrInvalidCredentials
+	}
+
+	// Verify the password
+	if err := VerifyPassword(user.PasswordHash, password); err != nil {
+		return "", "", ErrInvalidCredentials
+	}
+
+	// Generate and access token
+	accessToken, err = s.generateAccessToken(user)
+	if err != nil{
+		return "", "", err
+	}
+
+	// Create a refresh token
+	token, err := s.refreshTokenRepo.CreateRefreshToken(user.ID, refreshTokenTTL)
+	if err != nil {
+		return "", "", err
+	}
+
+	return accessToken, token.Token, nil
+}
+
+// RefreshAccessToken creates a new access token using a refresh token
+func (s *AuthService) RefreshAccessToken(refreshTokenString string) (string, error){
+	// Retrieve the refresh token
+	token, err := s.refreshTokenRepo.GetRefreshToken(refreshTokenString)
+	if err != nil {
+		return "", ErrInvalidToken
+	}
+	// Check if the token is valid
+	if token.Revoked {
+		return "", ErrInvalidToken
+	}
+
+	// Check if the token has expired
+	if time.Now().After(token.ExpiresAt) {
+		return "", ErrExpiredToken
+	}
+
+	// Get the user
+	user, err := s.userRepo.GetUserByID(token.UserID)
+	if err != nil {
+		return "", err
+	}
+
+	// Generate a new access token
+	accessToken, err := s.generateAccessToken(user)
+	if err != nil {
+		return "", err
+	}
+	return accessToken, nil
 }

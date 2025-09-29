@@ -2,6 +2,8 @@ package models
 
 import (
 	"database/sql"
+
+	"github.com/google/uuid"
 )
 
 type UserRepo interface {
@@ -14,7 +16,14 @@ type SQLiteUserRepo struct {
 }
 
 func (r *SQLiteUserRepo) CreateUser(u *User) error {
-	result, err := r.db.Exec("INSERT INTO users (username, first_name, last_name, email, password_hash, date_of_birth, balance,created_at) VALUES (?,?,?,?,?,?,?,?)", u.Username, u.FirstName, u.LastName, u.Email, u.PasswordHash, u.DateOfBirth, u.Balance, u.CreatedAt)
+	user := &User{
+		ID:    uuid.New(),
+		Email: email,
+	}
+	query := `
+	INSERT INTO users (username, first_name, last_name, email, password_hash, balance,created_at) VALUES (?,?,?,?,?,?,?)
+	`
+	result, err := r.db.Exec(query, u.Username, u.FirstName, u.LastName, u.Email, u.PasswordHash, u.Balance, u.CreatedAt)
 	if err != nil {
 		return err
 	}
@@ -23,14 +32,15 @@ func (r *SQLiteUserRepo) CreateUser(u *User) error {
 	if err != nil {
 		return err
 	}
-	u.ID = int(id)
+
+	u.ID = id
 	return nil
 }
 
 func (r *SQLiteUserRepo) GetUser(id int) (*User, error) {
-	row := r.db.QueryRow("SELECT id, username, first_name, last_name, date_of_birth, email, password, balance, created_at FROM users WHERE id = ?", id)
+	row := r.db.QueryRow("SELECT id, username, first_name, last_name, email, password_hash, balance, created_at FROM users WHERE id = ?", id)
 	var u User
-	err := row.Scan(&u.ID, &u.Username, &u.FirstName, &u.LastName, &u.DateOfBirth, &u.Email, &u.Password, &u.Balance, &u.CreatedAt)
+	err := row.Scan(&u.ID, &u.Username, &u.FirstName, &u.LastName, &u.Email, &u.PasswordHash, &u.Balance, &u.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +48,7 @@ func (r *SQLiteUserRepo) GetUser(id int) (*User, error) {
 }
 
 func (r *SQLiteUserRepo) GetAllUsers() ([]User, error) {
-	rows, err := r.db.Query(`SELECT id, username, first_name, last_name, email, password, date_of_birth, balance, created_at FROM users`)
+	rows, err := r.db.Query(`SELECT id, username, first_name, last_name, email, password_hash, balance, created_at FROM users`)
 
 	if err != nil {
 		return nil, err
@@ -48,7 +58,6 @@ func (r *SQLiteUserRepo) GetAllUsers() ([]User, error) {
 	var users []User
 	for rows.Next() {
 		var u User
-		var dob sql.NullTime
 		var createdAt sql.NullTime
 
 		err = rows.Scan(
@@ -56,9 +65,8 @@ func (r *SQLiteUserRepo) GetAllUsers() ([]User, error) {
 			&u.Username,
 			&u.FirstName,
 			&u.LastName,
-			&dob,
 			&u.Email,
-			&u.Password,
+			&u.PasswordHash,
 			&u.Balance,
 			&u.CreatedAt,
 		)
@@ -66,9 +74,6 @@ func (r *SQLiteUserRepo) GetAllUsers() ([]User, error) {
 			return nil, err
 		}
 
-		if dob.Valid {
-			u.DateOfBirth = dob.Time
-		}
 		if createdAt.Valid {
 			u.CreatedAt = createdAt.Time
 		}
