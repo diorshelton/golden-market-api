@@ -16,7 +16,7 @@ type AuthHandler struct {
 }
 
 // NewAuthHandler creates a new auth handler
-func NewAuthHandle(authService *auth.AuthService) *AuthHandler {
+func NewAuthHandler(authService *auth.AuthService) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
 	}
@@ -151,6 +151,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+
 	// Return the token
 	response := LoginResponse{Token: token}
 	w.Header().Set("Content-Type", "application/json")

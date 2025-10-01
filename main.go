@@ -1,46 +1,84 @@
 package main
 
 import (
-	"database/sql"
-	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
+
 	"time"
 
 	"github.com/diorshelton/golden-market/auth"
 	"github.com/diorshelton/golden-market/db"
+	"github.com/diorshelton/golden-market/handlers"
+	"github.com/diorshelton/golden-market/middleware"
 	"github.com/diorshelton/golden-market/models"
+	"github.com/joho/godotenv"
 )
 
-func main() {
-	s := &http.Server{
-		Addr:    ":3000",
-		Handler: marketServer(),
+// loadEnv loads environment variables from .env file
+func loadEnv() {
+	// Load .env file if it exists
+	if err := godotenv.Load(); err != nil {
+		log.Print("No .env file found, using environment variable")
 	}
-	log.Printf("Running sever on port%v", s.Addr)
-	log.Fatal(s.ListenAndServe())
+
+	// Check required variables
+	requiredVars := []string{"JWT_SECRET"}
+	for _, v := range requiredVars {
+		if os.Getenv(v) == "" {
+			log.Fatalf("Required environment variable  %s is not set", v)
+		}
+	}
 }
 
-var userDatabase = db.SetupTestUserDB()
-var refreshTokenDb = db.SetupRefreshTokenDB()
+func main() {
+	// Load environment variables
+	loadEnv()
 
-var userRepo = models.NewUserRepository(userDatabase)
-var tokenRepo = models.NewRefreshTokenRepository(refreshTokenDb)
+	// Set up databases
+	var refreshTokenDb = db.SetupRefreshTokenDB()
+	var userDb = db.SetupTestUserDB()
 
-// var service = auth.NewAuthService()
+	// Create repositories
+	tokenRepo := models.NewRefreshTokenRepository(refreshTokenDb)
+	userRepo := models.NewUserRepository(userDb)
 
-func marketServer() http.Handler {
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /sign-in", handleSignIn)
-	mux.HandleFunc("GET /register", handleRegister)
-	// mux.HandleFunc("POST /register", handlers.HandleRegisterForm)
-	return mux
-}
+	// Create services
+	authService := auth.NewAuthService(userRepo, tokenRepo, os.Getenv("JWT_SECRET"), 15*time.Minute)
 
-func handleSignIn(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, ".public/sign-in.html")
-}
+	// Create handlers
+	authHandler := handlers.NewAuthHandler(authService)
+	userHandler := handlers.NewUserHandler(userRepo)
 
-func handleRegister(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "./public/register.html")
+	// Main serve Mux
+	mainMux := http.NewServeMux()
+
+	// Public routes
+	mainMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	io.WriteString(w, "Welcome to Golden Market!\n")
+	})
+
+	mainMux.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "public/login.html")
+	})
+
+	mainMux.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "public/register.html")
+	})
+
+	// Protected routes
+	r := http.NewServeMux()
+	// protected.HandleFunc("POST /register", authHandler.Register)
+	// protected.HandleFunc("POST /login", authHandler.Login)
+	protected := middleware.AuthMiddleware(authService)
+	r.Handle("api/v1", protected(authHandler.Login(userHandler))
+
+
+	// protected.HandleFunc("GET /profile", userHandler.Profile)
+
+
+	log.Print("Golden Market server running...")
+	log.Fatal(http.ListenAndServe(":3000", mainMux))
+
 }

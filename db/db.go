@@ -3,6 +3,9 @@ package db
 import (
 	"database/sql"
 	"fmt"
+
+	_ "github.com/mattn/go-sqlite3"
+
 )
 
 // SetupTestUserDB creates a temporary in memory test user database
@@ -31,6 +34,7 @@ func SetupTestUserDB() *sql.DB {
 	return  db
 }
 
+// SetupTestUserDB creates a temporary in memory test refresh token database
 func SetupRefreshTokenDB() *sql.DB {
 	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
