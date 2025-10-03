@@ -42,19 +42,13 @@ type RegisterResponse struct {
 
 // Register handles user registration
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-// parse the request body
-	var req RegisterRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+// Parse  form data
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
 		return
 	}
 
-// Parse registration form
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "An error occurred while parsing form: %v", http.StatusInternalServerError)
-	}
-
-// Get form input and trim white space if any
+// Extract form data and tri
 	username := strings.TrimSpace(r.Form.Get("username"))
 	firstName := strings.TrimSpace(r.Form.Get("first_name"))
 	lastName := strings.TrimSpace(r.Form.Get("last_name"))
@@ -63,12 +57,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	passwordConfirm := strings.TrimSpace(r.Form.Get("password_confirm"))
 
 	// Validate input
-	err := validateInput(username, firstName, lastName, email, password,passwordConfirm, w)
-	if err != nil {
-		http.Error(w, "A parsing/validation error occurred", http.StatusBadRequest)
+	if err := validateInput(username, firstName, lastName, email, password,passwordConfirm); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
-// Call the auth service to register the user
+// Call the auth service
 	user, err := h.authService.Register(firstName, lastName, email, username,password)
 	if err != nil {
 		if errors.Is(err, auth.ErrEmailInUse) {
@@ -80,11 +74,13 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return created user (without sensitive data)
+	// Return response
 	response := RegisterResponse {
 		ID: user.ID.String(),
-		Email: user.Email,
 		Username: user.Username,
+		FirstName: user.FirstName,
+		LastName: user.LastName,
+		Email: user.Email,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -93,22 +89,19 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 // Validates form input from user's POST request
-func validateInput(username,firstName, lastName, email, password, passwordConfirm string, w http.ResponseWriter) error {
+func validateInput(username,firstName, lastName, email, password, passwordConfirm string,) error {
 	// Check values for empty strings
 	if username == "" || firstName == "" || lastName == "" || email == "" || password == ""{
-		http.Error(w, "Required form input empty", http.StatusBadRequest)
-		return errors.New("missing required input")
+		return errors.New("all fields required")
 	}
 
 	// Verify both passwords match
 	if password != passwordConfirm {
-		http.Error(w, "passwords must match", http.StatusBadRequest)
 		return errors.New("passwords must match")
 	}
 
 	// Validate email address
 	if _, err := mail.ParseAddress(email); err != nil {
-		http.Error(w, "invalid email address", http.StatusBadRequest)
 		return errors.New("invalid email address")
 	}
 	return  nil
@@ -122,20 +115,14 @@ type LoginRequest struct {
 
 // LoginResponse contains the JWT token after successful login
 type LoginResponse struct {
-	Token string `json:"toke"`
+	Token string `json:"token"`
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	var req LoginRequest
-
-// Parse request body
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w,"Invalid request payload", http.StatusBadRequest)
-	}
-	// Parse login input
-	r.ParseForm()
+	// Parse form data
 		if err := r.ParseForm(); err != nil {
-		http.Error(w, "An error occurred while parsing form: %v", http.StatusInternalServerError)
+		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
+		return
 	}
 
 	email := strings.TrimSpace(r.Form.Get("email"))
@@ -152,7 +139,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return the token
+	// Return token
 	response := LoginResponse{Token: token}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)

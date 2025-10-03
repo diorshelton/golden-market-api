@@ -63,22 +63,15 @@ func main() {
 		http.ServeFile(w, r, "public/login.html")
 	})
 
+	// Register protected endpoints
+	mainMux.HandleFunc("POST /register", authHandler.Register)
+	mainMux.HandleFunc("POST /login", authHandler.Login)
+	mainMux.HandleFunc("POST /refresh", authHandler.RefreshToken)
+
 	mainMux.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "public/register.html")
 	})
 
-	// Protected routes
-	r := http.NewServeMux()
-	// protected.HandleFunc("POST /register", authHandler.Register)
-	// protected.HandleFunc("POST /login", authHandler.Login)
-	protected := middleware.AuthMiddleware(authService)
-	r.Handle("api/v1", protected(authHandler.Login(userHandler))
-
-
-	// protected.HandleFunc("GET /profile", userHandler.Profile)
-
-
 	log.Print("Golden Market server running...")
 	log.Fatal(http.ListenAndServe(":3000", mainMux))
-
 }
