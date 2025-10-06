@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"net/mail"
 	"strings"
@@ -71,7 +70,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		http.Error(w, "Error creating user" + err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Error creating user", http.StatusInternalServerError)
 		return
 	}
 
@@ -120,7 +119,6 @@ type LoginResponse struct {
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	log.Print("on login page")
 	// Parse form data
 		if err := r.ParseForm(); err != nil {
 		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
@@ -145,7 +143,6 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	response := LoginResponse{Token: token}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
-	log.Print(response)
 }
 
 // RefreshRequest represents the refresh token payload
@@ -182,8 +179,4 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	response := RefreshResponse{Token: token}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
-}
-
-func sanityCheck(r *http.Request) {
-	log.Printf("Sanity Check: %v",r.URL)
 }

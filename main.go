@@ -85,9 +85,3 @@ func main() {
 	log.Printf("Server starting on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
-
-func sanityCheck(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	log.Println("Form Data:", r.Form)
-	log.Println("PostForm Data:", r.PostForm)
-}
