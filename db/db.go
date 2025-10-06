@@ -16,7 +16,7 @@ func SetupTestUserDB() *sql.DB {
 	}
 
 	query := `
-		CREATE TABLE users (
+		CREATE TABLE IF NOT EXISTS users (
 		id INTEGER PRIMARY KEY,
 		username TEXT NOT NULL UNIQUE,
 		first_name TEXT NOT NULL,
@@ -24,7 +24,8 @@ func SetupTestUserDB() *sql.DB {
 		email TEXT NOT NULL UNIQUE,
 		password_hash TEXT NOT NULL,
 		balance INTEGER NOT NULL DEFAULT 0,
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		last_login DATETIME
 		)
 	`
 	_, err = db.Exec(query)

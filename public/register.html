@@ -1,29 +1,39 @@
-<form action="/register/" method="POST">
-  <div class="form-group">
-    <input type="text" name="username" class="form-control" id="username" placeholder="Username"
-      style="border:solid black 1px;box-shadow:inset;" required>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register Form</title>
+</head>
+<body>
+  <form method="POST" action="http://localhost:8080/api/auth/register">
+    <div class="form-group">
+      <input type="text" name="username" class="form-control" id="username" placeholder="Username"
+        style="border:solid black 1px;box-shadow:inset;" required>
 
-    <input type="text" name="first_name" class="form-control" id="first_name" placeholder="First Name"
-      style="border:solid black 1px;box-shadow:inset;" required>
+      <input type="text" name="first_name" class="form-control" id="first_name" placeholder="First Name"
+        style="border:solid black 1px;box-shadow:inset;" required>
 
-    <input type="text" name="last_name" class="form-control" id="last_name" placeholder="Last Name"
-      style="border:solid black 1px;box-shadow:inset;" required>
-<!--
-    <input type="date" name="date_of_birth" class="form-control" id="date_of_birth"
-      style="border:solid black 1px;box-shadow:inset;" required> -->
+      <input type="text" name="last_name" class="form-control" id="last_name" placeholder="Last Name"
+        style="border:solid black 1px;box-shadow:inset;" required>
+      <!--
+      <input type="date" name="date_of_birth" class="form-control" id="date_of_birth"
+        style="border:solid black 1px;box-shadow:inset;" required> -->
 
-    <input type="email" name="email" class="form-control" id="email" placeholder="E-mail"
-      style="border:solid black 1px;box-shadow:inset;" required>
+      <input type="email" name="email" class="form-control" id="email" placeholder="E-mail"
+        style="border:solid black 1px;box-shadow:inset;" required>
 
-    <input type="password" name="password" class="form-control" id="password" placeholder="Password"
-      style="border:solid black 1px;box-shadow:inset;" required>
+      <input type="password" name="password" class="form-control" id="password" placeholder="Password"
+        style="border:solid black 1px;box-shadow:inset;" required>
 
-    <input type="password" name="password_confirm" class="form-control" id="password_confirm"
-      placeholder="Confirm Password" style="border:solid black 1px;box-shadow:inset;" required>
-  </div>
+      <input type="password" name="password_confirm" class="form-control" id="password_confirm"
+        placeholder="Confirm Password" style="border:solid black 1px;box-shadow:inset;" required>
+    </div>
 
-  <div class="modal-footer">
-    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-    <input type="submit" value="Submit" class="btn btn-default" />
-  </div>
-</form>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      <input type="submit" value="Submit" class="btn btn-default" />
+    </div>
+  </form>
+</body>
+</html>

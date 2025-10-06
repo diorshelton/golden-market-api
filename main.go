@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-
 	"time"
 
 	"github.com/diorshelton/golden-market/auth"
@@ -13,6 +12,7 @@ import (
 	"github.com/diorshelton/golden-market/handlers"
 	"github.com/diorshelton/golden-market/middleware"
 	"github.com/diorshelton/golden-market/models"
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
 
@@ -51,27 +51,43 @@ func main() {
 	authHandler := handlers.NewAuthHandler(authService)
 	userHandler := handlers.NewUserHandler(userRepo)
 
-	// Main serve Mux
-	mainMux := http.NewServeMux()
+	// Create New Router
+	r := mux.NewRouter()
 
-	// Public routes
-	mainMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, "Welcome to Golden Market!\n")
+	// Public Routes
+	r.HandleFunc("/api/auth", func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "Welcome to Golden Market!\n")
 	})
 
-	mainMux.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+	// Public pages
+	r.HandleFunc("/api/auth/login", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "public/login.html")
-	})
+	}).Methods("GET")
 
-	// Register protected endpoints
-	mainMux.HandleFunc("POST /register", authHandler.Register)
-	mainMux.HandleFunc("POST /login", authHandler.Login)
-	mainMux.HandleFunc("POST /refresh", authHandler.RefreshToken)
-
-	mainMux.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/api/auth/register", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "public/register.html")
-	})
+	}).Methods("GET")
 
-	log.Print("Golden Market server running...")
-	log.Fatal(http.ListenAndServe(":3000", mainMux))
+	// Auth API
+	r.HandleFunc("/api/auth/register", authHandler.Register).Methods("POST")
+	r.HandleFunc("/api/auth/login", authHandler.Login).Methods("POST")
+	r.HandleFunc("/api/auth/refresh", authHandler.RefreshToken).Methods("POST")
+
+	protected := r.PathPrefix("/api").Subrouter()
+	protected.Use(middleware.AuthMiddleware(authService))
+
+	protected.HandleFunc("GET /profile", userHandler.Profile).Methods("GET")
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Printf("Server starting on port %s", port)
+	log.Fatal(http.ListenAndServe(":"+port, r))
+}
+
+func sanityCheck(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	log.Println("Form Data:", r.Form)
+	log.Println("PostForm Data:", r.PostForm)
 }

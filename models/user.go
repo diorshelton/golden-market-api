@@ -44,9 +44,9 @@ func (r *UserRepository) CreateUser(username, firstName, lastName, email, passwo
 	}
 
 	query := `
-		INSERT INTO users (id, username, first_name, last_name, email, password_hash, balance, inventory, created_at, last_login) VALUES (?,?,?,?,?,?,?,?,?,?)
+		INSERT INTO users (id, username, first_name, last_name, email, password_hash, balance, inventory, created_at, last_login) VALUES (?,?,?,?,?,?,?,?,?)
 		`
-	_, err := r.db.Exec(query, user.ID, user.Username, user.FirstName, user.LastName, user.Email, user.PasswordHash, user.Balance, user.Inventory, user.CreatedAt, user.LastLogin)
+	_, err := r.db.Exec(query, user.ID, user.Username, user.FirstName, user.LastName, user.Email, user.PasswordHash, user.Balance, user.CreatedAt, user.LastLogin)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (r *UserRepository) CreateUser(username, firstName, lastName, email, passwo
 
 // GetUserByEmail retrieves a user by their email address
 func (r *UserRepository) GetUserByEmail(email string) (*User, error) {
-	query := `SELECT id, username, first_name, last_name, email, password_hash, balance, inventory, created_at, last_login FROM users WHERE email = ?`
+	query := `SELECT id, username, first_name, last_name, email, password_hash, balance, created_at, last_login FROM users WHERE email = ?`
 
 	var user User
 	var lastLogin sql.NullTime
@@ -69,7 +69,6 @@ func (r *UserRepository) GetUserByEmail(email string) (*User, error) {
 		&user.Email,
 		&user.PasswordHash,
 		&user.Balance,
-		&user.Inventory,
 		&user.CreatedAt,
 		&user.LastLogin,
 	)
@@ -87,7 +86,7 @@ func (r *UserRepository) GetUserByEmail(email string) (*User, error) {
 
 // GetUserByID retrieves a user by their ID
 func (r *UserRepository) GetUserByID(id uuid.UUID) (*User, error) {
-	query := `SELECT id, username, first_name, last_name, email, password_hash, balance, inventory, created_at, last_login FROM users WHERE id = ?`
+	query := `SELECT id, username, first_name, last_name, email, password_hash, balance, created_at, last_login FROM users WHERE id = ?`
 
 	var user User
 	var lastLogin sql.NullTime
@@ -100,7 +99,6 @@ func (r *UserRepository) GetUserByID(id uuid.UUID) (*User, error) {
 		&user.Email,
 		&user.PasswordHash,
 		&user.Balance,
-		&user.Inventory,
 		&user.CreatedAt,
 		&user.LastLogin,
 	)
