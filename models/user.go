@@ -44,7 +44,7 @@ func (r *UserRepository) CreateUser(username, firstName, lastName, email, passwo
 	}
 
 	query := `
-		INSERT INTO users (id, username, first_name, last_name, email, password_hash, balance, inventory, created_at, last_login) VALUES (?,?,?,?,?,?,?,?,?)
+		INSERT INTO users (id, username, first_name, last_name, email, password_hash, balance, created_at, last_login) VALUES (?,?,?,?,?,?,?,?,?)
 		`
 	_, err := r.db.Exec(query, user.ID, user.Username, user.FirstName, user.LastName, user.Email, user.PasswordHash, user.Balance, user.CreatedAt, user.LastLogin)
 	if err != nil {

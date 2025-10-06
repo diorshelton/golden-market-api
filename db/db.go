@@ -17,7 +17,7 @@ func SetupTestUserDB() *sql.DB {
 
 	query := `
 		CREATE TABLE IF NOT EXISTS users (
-		id INTEGER PRIMARY KEY,
+		id string PRIMARY KEY,
 		username TEXT NOT NULL UNIQUE,
 		first_name TEXT NOT NULL,
 		last_name TEXT NOT NULL,
@@ -44,7 +44,7 @@ func SetupRefreshTokenDB() *sql.DB {
 
 	query := `
 		CREATE TABLE refresh_tokens (
-		id INTEGER PRIMARY KEY,
+		id string PRIMARY KEY,
 		user_id TEXT NOT NULL UNIQUE,
 		token TEXT NOT NULL,
 		expires_at DATETIME NOT NULL,
