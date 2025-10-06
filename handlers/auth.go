@@ -118,6 +118,7 @@ type LoginResponse struct {
 	Token string `json:"token"`
 }
 
+//  Login handles user login
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	// Parse form data
 		if err := r.ParseForm(); err != nil {

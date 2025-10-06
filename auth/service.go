@@ -146,7 +146,7 @@ func (s *AuthService) LoginWithRefresh(email, password string, refreshTokenTTL t
 		return "", "", ErrInvalidCredentials
 	}
 
-	// Generate and access token
+	// Generate an access token
 	accessToken, err = s.generateAccessToken(user)
 	if err != nil{
 		return "", "", err

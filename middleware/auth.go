@@ -67,6 +67,6 @@ func AuthMiddleware(authService *auth.AuthService) func (http.Handler) http.Hand
 
 // GetUserID retrieves the user ID from the request context
 func GetUserID(r *http.Request) (uuid.UUID, bool) {
-	userID,ok := r.Context().Value(UserIDKey).(uuid.UUID)
+	userID, ok := r.Context().Value(UserIDKey).(uuid.UUID)
 	return userID, ok
 }

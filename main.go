@@ -56,6 +56,7 @@ func main() {
 
 	// Public Routes
 	r.HandleFunc("/api/auth", func(w http.ResponseWriter, r *http.Request) {
+
 		io.WriteString(w, "Welcome to Golden Market!\n")
 	})
 
@@ -74,9 +75,10 @@ func main() {
 	r.HandleFunc("/api/auth/refresh", authHandler.RefreshToken).Methods("POST")
 
 	protected := r.PathPrefix("/api").Subrouter()
+
 	protected.Use(middleware.AuthMiddleware(authService))
 
-	protected.HandleFunc("GET /profile", userHandler.Profile).Methods("GET")
+	protected.HandleFunc("/profile", userHandler.Profile).Methods("GET")
 
 	port := os.Getenv("PORT")
 	if port == "" {
