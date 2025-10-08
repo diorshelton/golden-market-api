@@ -55,24 +55,24 @@ func main() {
 	r := mux.NewRouter()
 
 	// Public Routes
-	r.HandleFunc("/api/auth", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 
 		io.WriteString(w, "Welcome to Golden Market!\n")
 	})
 
 	// Public pages
-	r.HandleFunc("/api/auth/login", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/api/v1/login", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "public/login.html")
 	}).Methods("GET")
 
-	r.HandleFunc("/api/auth/register", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/api/v1/register", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "public/register.html")
 	}).Methods("GET")
 
 	// Auth API
-	r.HandleFunc("/api/auth/register", authHandler.Register).Methods("POST")
-	r.HandleFunc("/api/auth/login", authHandler.Login).Methods("POST")
-	r.HandleFunc("/api/auth/refresh", authHandler.RefreshToken).Methods("POST")
+	r.HandleFunc("/api/v1/auth/register", authHandler.Register).Methods("POST")
+	r.HandleFunc("/api/v1/auth/login", authHandler.Login).Methods("POST")
+	r.HandleFunc("/api/v1/auth/refresh", authHandler.RefreshToken).Methods("POST")
 
 	protected := r.PathPrefix("/api").Subrouter()
 

@@ -2,11 +2,12 @@ package middleware
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/diorshelton/golden-market/auth"
+	"github.com/google/uuid"
 )
 
 // Key type for context values
@@ -40,6 +41,7 @@ func AuthMiddleware(authService *auth.AuthService) func (http.Handler) http.Hand
 			// Validate the token
 			claims, err := authService.ValidateToken(tokenString)
 			if err != nil{
+				log.Print(err.Error())	// Log statement
 				http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
 				return
 			}
