@@ -92,8 +92,8 @@ func (s *AuthService) generateAccessToken(user *models.User) (string, error) {
 		"sub": user.ID.String(), // subject (user ID)
 		"username": user.Username, // custom claim
 		"email": user.Email, // custom claim
-		"exp": expirationTime.UTC(), // expiration time
-		"iat": time.Now().UTC(), // issued at time
+		"exp": expirationTime.Unix(), // expiration time
+		"iat": time.Now().Unix(), // issued at time
 	}
 
 	// Create the token with claims

@@ -30,3 +30,12 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+#Air config files
+.air.toml
+
+# Temporary files and folder
+mycmd
+tmp/
+*.log
+*.bak

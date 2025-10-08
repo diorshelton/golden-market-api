@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"strings"
 
@@ -41,9 +40,9 @@ func AuthMiddleware(authService *auth.AuthService) func (http.Handler) http.Hand
 			// Validate the token
 			claims, err := authService.ValidateToken(tokenString)
 			if err != nil{
-				log.Print(err.Error())	// Log statement
 				http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
 				return
+
 			}
 
 			// Extract user ID from claims
