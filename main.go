@@ -44,8 +44,13 @@ func main() {
 	tokenRepo := models.NewRefreshTokenRepository(refreshTokenDb)
 	userRepo := models.NewUserRepository(userDb)
 
+	TTL, err := time.ParseDuration(os.Getenv("ACCESS_TOKEN_EXPIRY"))
+	if err != nil {
+		log.Fatalf("Error parsing duration:%v", err.Error())
+	}
+
 	// Create services
-	authService := auth.NewAuthService(userRepo, tokenRepo, os.Getenv("JWT_SECRET"), 15*time.Minute)
+	authService := auth.NewAuthService(userRepo, tokenRepo, os.Getenv("JWT_SECRET"), TTL)
 
 	// Create handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -56,16 +61,15 @@ func main() {
 
 	// Public Routes
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-
 		io.WriteString(w, "Welcome to Golden Market!\n")
 	})
 
 	// Public pages
-	r.HandleFunc("/api/v1/login", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/api/v1/auth/login", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "public/login.html")
 	}).Methods("GET")
 
-	r.HandleFunc("/api/v1/register", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/api/v1/auth/register", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "public/register.html")
 	}).Methods("GET")
 
@@ -82,8 +86,8 @@ func main() {
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "localhost:8080"
 	}
-	log.Printf("Server starting on port %s", port)
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	log.Printf("Server starting on %s", port)
+	log.Fatal(http.ListenAndServe(port, r))
 }

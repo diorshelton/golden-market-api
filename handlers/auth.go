@@ -5,7 +5,9 @@ import (
 	"errors"
 	"net/http"
 	"net/mail"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/diorshelton/golden-market/auth"
 )
@@ -154,6 +156,49 @@ type RefreshRequest struct {
 // RefreshResponse contains the new access token
 type RefreshResponse struct {
 	Token string `json:"token"`
+}
+
+type AccessAndRefreshResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken  string `json:"refresh_token"`
+}
+
+// LoginWithRefresh handles user login with access and refresh tokens
+func(h *AuthHandler) LoginWithRefresh(w http.ResponseWriter, r *http.Request) {
+	// Parse form data
+	if err := r.ParseForm(); err != nil {
+	http.Error(w, "Failed to parse form data", http.StatusBadRequest)
+	return
+	}
+
+	email := strings.TrimSpace(r.Form.Get("email"))
+	password := strings.TrimSpace(r.Form.Get("password"))
+
+	//Get refresh expiration and parse duration
+	exp := os.Getenv("REFRESH_TOKEN_EXPIRY")
+	parsedTime, err := time.ParseDuration(exp)
+	if err != nil {
+		http.Error(w, "Error parsing refresh expiration " + err.Error(), http.StatusInternalServerError)
+		return
+	}
+	TTL := parsedTime * 8
+
+	// Attempt to login
+	accessToken, refreshToken, err := h.authService.LoginWithRefresh(email, password, TTL)
+
+	if err != nil {
+		if errors.Is(err, auth.ErrInvalidCredentials) {
+			http.Error(w, "Invalid credentials"+ err.Error(), http.StatusUnauthorized)
+		} else {
+			http.Error(w, "Internal server error"+err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Return access and refresh tokens
+	response := AccessAndRefreshResponse{AccessToken:accessToken, RefreshToken: refreshToken}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 // RefreshToken handles access token refresh
