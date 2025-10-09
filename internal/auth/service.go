@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/diorshelton/golden-market/models"
+	"github.com/diorshelton/golden-market/internal/models"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )

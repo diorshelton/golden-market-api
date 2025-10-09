@@ -7,11 +7,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/diorshelton/golden-market/auth"
-	"github.com/diorshelton/golden-market/db"
-	"github.com/diorshelton/golden-market/handlers"
-	"github.com/diorshelton/golden-market/middleware"
-	"github.com/diorshelton/golden-market/models"
+	"github.com/diorshelton/golden-market/internal/auth"
+	db "github.com/diorshelton/golden-market/internal/database"
+	"github.com/diorshelton/golden-market/internal/handlers"
+	"github.com/diorshelton/golden-market/internal/middleware"
+	"github.com/diorshelton/golden-market/internal/models"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )

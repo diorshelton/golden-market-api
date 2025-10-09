@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/diorshelton/golden-market/auth"
+	"github.com/diorshelton/golden-market/internal/auth"
 )
 
 // AuthHandler contains HTTP handlers for authentication
