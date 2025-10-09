@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/diorshelton/golden-market/auth"
+	"github.com/diorshelton/golden-market/internal/auth"
 	"github.com/google/uuid"
 )
 

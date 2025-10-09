@@ -5,8 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/diorshelton/golden-market/models"
+	"github.com/diorshelton/golden-market/internal/models"
 	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var (
@@ -48,7 +49,7 @@ func (s *AuthService) Register(firstName, lastName, email, username, password st
 	}
 
 	//Hash the password
-	hashedPassword, err := HashPassword(password)
+	hashedPassword, err := hashPassword(password)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +70,7 @@ func (s *AuthService) Login (email, password string) (string, error) {
 	}
 
 	// Verify the password
-	if err := VerifyPassword(user.PasswordHash, password); err != nil {
+	if err := verifyPassword(user.PasswordHash, password); err != nil {
 		return  " ", ErrInvalidCredentials
 	}
 
@@ -142,7 +143,7 @@ func (s *AuthService) LoginWithRefresh(email, password string, refreshTokenTTL t
 	}
 
 	// Verify the password
-	if err := VerifyPassword(user.PasswordHash, password); err != nil {
+	if err := verifyPassword(user.PasswordHash, password); err != nil {
 		return "", "", ErrInvalidCredentials
 	}
 
@@ -190,4 +191,18 @@ func (s *AuthService) RefreshAccessToken(refreshTokenString string) (string, err
 		return "", err
 	}
 	return accessToken, nil
+}
+// hashPassword hashes a plaintext password using bcrypt
+func hashPassword(password string) (string, error) {
+	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+
+	return string(hashedBytes), nil
+}
+
+// verifyPassword compares a hashed password with a plaintext password
+func verifyPassword(hashedPassword, providedPassword string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(providedPassword))
 }
