@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/diorshelton/golden-market/auth"
+	"github.com/google/uuid"
 )
 
 // Key type for context values
@@ -42,6 +42,7 @@ func AuthMiddleware(authService *auth.AuthService) func (http.Handler) http.Hand
 			if err != nil{
 				http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
 				return
+
 			}
 
 			// Extract user ID from claims
@@ -67,6 +68,6 @@ func AuthMiddleware(authService *auth.AuthService) func (http.Handler) http.Hand
 
 // GetUserID retrieves the user ID from the request context
 func GetUserID(r *http.Request) (uuid.UUID, bool) {
-	userID,ok := r.Context().Value(UserIDKey).(uuid.UUID)
+	userID, ok := r.Context().Value(UserIDKey).(uuid.UUID)
 	return userID, ok
 }

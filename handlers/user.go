@@ -1,11 +1,11 @@
 package handlers
 
 import (
-"encoding/json"
-"net/http"
+	"encoding/json"
+	"net/http"
 
-"github.com/diorshelton/golden-market/middleware"
-"github.com/diorshelton/golden-market/models"
+	"github.com/diorshelton/golden-market/middleware"
+	"github.com/diorshelton/golden-market/models"
 )
 
 //  UserHandler contains HTTP handlers for user-related endpoints

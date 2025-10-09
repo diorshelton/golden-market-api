@@ -92,8 +92,8 @@ func (s *AuthService) generateAccessToken(user *models.User) (string, error) {
 		"sub": user.ID.String(), // subject (user ID)
 		"username": user.Username, // custom claim
 		"email": user.Email, // custom claim
-		"exp": expirationTime.UTC(), // expiration time
-		"iat": time.Now().UTC(), // issued at time
+		"exp": expirationTime.Unix(), // expiration time
+		"iat": time.Now().Unix(), // issued at time
 	}
 
 	// Create the token with claims
@@ -111,12 +111,12 @@ func (s *AuthService) generateAccessToken(user *models.User) (string, error) {
 // ValidateToken verifies a JWT token and returns the claim
 func (s *AuthService) ValidateToken(tokenString string) (jwt.MapClaims, error) {
 	// Parse the token
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-	// Validate the signing method
-	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-		return  nil, ErrInvalidToken
-	}
-	return  s.jwtSecret, nil
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
+		// Validate the signing method
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return  nil, ErrInvalidToken
+		}
+			return  s.jwtSecret, nil
 	})
 
 	if err != nil {
@@ -146,7 +146,7 @@ func (s *AuthService) LoginWithRefresh(email, password string, refreshTokenTTL t
 		return "", "", ErrInvalidCredentials
 	}
 
-	// Generate and access token
+	// Generate an access token
 	accessToken, err = s.generateAccessToken(user)
 	if err != nil{
 		return "", "", err

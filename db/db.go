@@ -16,15 +16,16 @@ func SetupTestUserDB() *sql.DB {
 	}
 
 	query := `
-		CREATE TABLE users (
-		id INTEGER PRIMARY KEY,
+		CREATE TABLE IF NOT EXISTS users (
+		id string PRIMARY KEY,
 		username TEXT NOT NULL UNIQUE,
 		first_name TEXT NOT NULL,
 		last_name TEXT NOT NULL,
 		email TEXT NOT NULL UNIQUE,
 		password_hash TEXT NOT NULL,
 		balance INTEGER NOT NULL DEFAULT 0,
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		last_login DATETIME
 		)
 	`
 	_, err = db.Exec(query)
@@ -43,7 +44,7 @@ func SetupRefreshTokenDB() *sql.DB {
 
 	query := `
 		CREATE TABLE refresh_tokens (
-		id INTEGER PRIMARY KEY,
+		id string PRIMARY KEY,
 		user_id TEXT NOT NULL UNIQUE,
 		token TEXT NOT NULL,
 		expires_at DATETIME NOT NULL,
