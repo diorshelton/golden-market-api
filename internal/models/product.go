@@ -1,10 +1,10 @@
 package models
 
 import (
-	"errors"
 	"time"
 )
 
+// Product represents a product in the marketplace
 type Product struct {
 	ID          int       `json:"id"`
 	Name        string    `json:"name"`
@@ -18,47 +18,11 @@ type Product struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+// Item represents a product in a user's inventory
 type Item struct {
 	ProductID int `json:"product_id"`
 	Quantity  int `json:"quantity"`
 }
 
+// Coins represents the in-game currency
 type Coins int32
-
-func AddToInventory(user *User, productID, quantity int) {
-	for i, item := range user.Inventory {
-		if item.ProductID == productID {
-			user.Inventory[i].Quantity += quantity
-			return
-		}
-	}
-	user.Inventory = append(user.Inventory, Item{
-		ProductID: productID,
-		Quantity:  quantity,
-	})
-}
-
-func RemoveFromInventory(user *User, productID, quantity int) error {
-	for i, item := range user.Inventory {
-		if item.ProductID == productID {
-			if item.Quantity < quantity {
-				return errors.New("not enough items to remove")
-			}
-			user.Inventory[i].Quantity -= quantity
-			if user.Inventory[i].Quantity == 0 {
-				user.Inventory = append(user.Inventory[:i], user.Inventory[i+1:]...)
-			}
-			return nil
-		}
-	}
-	return errors.New("item not found inventory")
-}
-
-func RestockProduct(product *Product) {
-	now := time.Now()
-	if now.Sub(product.LastRestock) >= time.Hour {
-		newStock := min(product.Stock+product.RestockRate, product.MaxStock)
-		product.Stock = newStock
-		product.LastRestock = now
-	}
-}
