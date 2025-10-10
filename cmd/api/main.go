@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/diorshelton/golden-market/internal/auth"
-	db "github.com/diorshelton/golden-market/internal/database"
+	"github.com/diorshelton/golden-market/internal/database"
 	"github.com/diorshelton/golden-market/internal/handlers"
 	"github.com/diorshelton/golden-market/internal/middleware"
 	"github.com/diorshelton/golden-market/internal/models"
@@ -44,6 +44,7 @@ func main() {
 	tokenRepo := models.NewRefreshTokenRepository(refreshTokenDb)
 	userRepo := models.NewUserRepository(userDb)
 
+	// Parse token duration
 	TTL, err := time.ParseDuration(os.Getenv("ACCESS_TOKEN_EXPIRY"))
 	if err != nil {
 		log.Fatalf("Error parsing duration:%v", err.Error())
@@ -78,6 +79,7 @@ func main() {
 	r.HandleFunc("/api/v1/auth/login", authHandler.Login).Methods("POST")
 	r.HandleFunc("/api/v1/auth/refresh", authHandler.RefreshToken).Methods("POST")
 
+	// Protected routes
 	protected := r.PathPrefix("/api").Subrouter()
 
 	protected.Use(middleware.AuthMiddleware(authService))
