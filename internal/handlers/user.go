@@ -5,16 +5,16 @@ import (
 	"net/http"
 
 	"github.com/diorshelton/golden-market/internal/middleware"
-	"github.com/diorshelton/golden-market/internal/models"
+	"github.com/diorshelton/golden-market/internal/repository"
 )
 
 //  UserHandler contains HTTP handlers for user-related endpoints
 type UserHandler struct {
-	userRepo *models.UserRepository
+	userRepo *repository.UserRepository
 }
 
 // NewUserHandler creates a new yser handler
-func NewUserHandler(userRepo *models.UserRepository) *UserHandler {
+func NewUserHandler(userRepo *repository.UserRepository) *UserHandler {
 	return &UserHandler{
 		userRepo: userRepo,
 	}

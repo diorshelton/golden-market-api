@@ -11,7 +11,7 @@ import (
 	"github.com/diorshelton/golden-market/internal/database"
 	"github.com/diorshelton/golden-market/internal/handlers"
 	"github.com/diorshelton/golden-market/internal/middleware"
-	"github.com/diorshelton/golden-market/internal/models"
+	"github.com/diorshelton/golden-market/internal/repository"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
@@ -41,8 +41,8 @@ func main() {
 	var userDb = db.SetupTestUserDB()
 
 	// Create repositories
-	tokenRepo := models.NewRefreshTokenRepository(refreshTokenDb)
-	userRepo := models.NewUserRepository(userDb)
+	tokenRepo := repository.NewRefreshTokenRepository(refreshTokenDb)
+	userRepo := repository.NewUserRepository(userDb)
 
 	// Parse token duration
 	TTL, err := time.ParseDuration(os.Getenv("ACCESS_TOKEN_EXPIRY"))

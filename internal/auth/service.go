@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/diorshelton/golden-market/internal/models"
+	"github.com/diorshelton/golden-market/internal/repository"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -19,14 +20,14 @@ var (
 
 //AuthService provides authentication functionality
 type AuthService struct {
-	userRepo *models.UserRepository
-	refreshTokenRepo *models.RefreshTokenRepository
+	userRepo *repository.UserRepository
+	refreshTokenRepo *repository.RefreshTokenRepository
 	jwtSecret []byte
 	accessTokenTTL time.Duration
 }
 
 // NewAuthService creates a new authentication service
-func NewAuthService(userRepo *models.UserRepository, refreshTokenRepo *models.RefreshTokenRepository, jwtSecret string, accessTokenTTL time.Duration) *AuthService {
+func NewAuthService(userRepo *repository.UserRepository, refreshTokenRepo *repository.RefreshTokenRepository, jwtSecret string, accessTokenTTL time.Duration) *AuthService {
 	return &AuthService{
 		userRepo: userRepo,
 		refreshTokenRepo: refreshTokenRepo,
