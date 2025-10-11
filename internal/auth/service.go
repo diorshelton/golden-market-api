@@ -23,16 +23,26 @@ type AuthService struct {
 	userRepo *repository.UserRepository
 	refreshTokenRepo *repository.RefreshTokenRepository
 	jwtSecret []byte
+	refreshSecret []byte
 	accessTokenTTL time.Duration
+	refreshTokenTTL time.Duration
 }
 
 // NewAuthService creates a new authentication service
-func NewAuthService(userRepo *repository.UserRepository, refreshTokenRepo *repository.RefreshTokenRepository, jwtSecret string, accessTokenTTL time.Duration) *AuthService {
+func NewAuthService(
+	userRepo *repository.UserRepository,
+	refreshTokenRepo *repository.RefreshTokenRepository, jwtSecret string,
+	refreshSecret string,
+	accessTokenTTL time.Duration,
+	refreshTokenTTL time.Duration,
+) *AuthService {
 	return &AuthService{
 		userRepo: userRepo,
 		refreshTokenRepo: refreshTokenRepo,
 		jwtSecret: []byte(jwtSecret),
+		refreshSecret: []byte(refreshSecret),
 		accessTokenTTL: accessTokenTTL,
+		refreshTokenTTL: refreshTokenTTL,
 	}
 }
 
@@ -63,6 +73,7 @@ func (s *AuthService) Register(firstName, lastName, email, username, password st
 	return  user, nil
 }
 
+// Login authenticates a user and returns a JWT access token
 func (s *AuthService) Login (email, password string) (string, error) {
 	// Get the user from the database
 	user, err := s.userRepo.GetUserByEmail(email)
@@ -136,7 +147,8 @@ func (s *AuthService) ValidateToken(tokenString string) (jwt.MapClaims, error) {
 }
 
 // LoginWithRefresh authenticates a user and returns both access and refresh tokens
-func (s *AuthService) LoginWithRefresh(email, password string, refreshTokenTTL time.Duration) (accessToken string, refreshToken string, err error) {
+func (s *AuthService) LoginWithRefresh(
+	email, password string)(accessToken string, refreshToken string, err error) {
 	// Get the user from the database
 	user, err := s.userRepo.GetUserByEmail(email)
 	if err != nil {
@@ -154,8 +166,8 @@ func (s *AuthService) LoginWithRefresh(email, password string, refreshTokenTTL t
 		return "", "", err
 	}
 
-	// Create a refresh token
-	token, err := s.refreshTokenRepo.CreateRefreshToken(user.ID, refreshTokenTTL)
+	// Create a refresh token (using service's refreshTokenTTL)
+	token, err := s.refreshTokenRepo.CreateRefreshToken(user.ID, s.refreshTokenTTL)
 	if err != nil {
 		return "", "", err
 	}
@@ -170,6 +182,7 @@ func (s *AuthService) RefreshAccessToken(refreshTokenString string) (string, err
 	if err != nil {
 		return "", ErrInvalidToken
 	}
+
 	// Check if the token is valid
 	if token.Revoked {
 		return "", ErrInvalidToken

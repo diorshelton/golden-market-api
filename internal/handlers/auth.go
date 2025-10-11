@@ -5,9 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/mail"
-	"os"
 	"strings"
-	"time"
 
 	"github.com/diorshelton/golden-market/internal/auth"
 )
@@ -174,23 +172,14 @@ func(h *AuthHandler) LoginWithRefresh(w http.ResponseWriter, r *http.Request) {
 	email := strings.TrimSpace(r.Form.Get("email"))
 	password := strings.TrimSpace(r.Form.Get("password"))
 
-	//Get refresh expiration and parse duration
-	exp := os.Getenv("REFRESH_TOKEN_EXPIRY")
-	parsedTime, err := time.ParseDuration(exp)
-	if err != nil {
-		http.Error(w, "Error parsing refresh expiration " + err.Error(), http.StatusInternalServerError)
-		return
-	}
-	TTL := parsedTime * 8
-
 	// Attempt to login
-	accessToken, refreshToken, err := h.authService.LoginWithRefresh(email, password, TTL)
+	accessToken, refreshToken, err := h.authService.LoginWithRefresh(email, password)
 
 	if err != nil {
 		if errors.Is(err, auth.ErrInvalidCredentials) {
-			http.Error(w, "Invalid credentials"+ err.Error(), http.StatusUnauthorized)
+			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		} else {
-			http.Error(w, "Internal server error"+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -203,15 +192,16 @@ func(h *AuthHandler) LoginWithRefresh(w http.ResponseWriter, r *http.Request) {
 
 // RefreshToken handles access token refresh
 func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
-	// Parse the request body
-	var req RefreshRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+
+		// Parse form data
+	if err := r.ParseForm(); err != nil {
+	http.Error(w, "Failed to parse form data", http.StatusBadRequest)
+	return
 	}
+	refreshToken := strings.TrimSpace(r.Form.Get("refresh_token"))
 
 	// Attempt to refresh the token
-	token, err := h.authService.RefreshAccessToken(req.RefreshToken)
+	token, err := h.authService.RefreshAccessToken(refreshToken)
 	if err != nil {
 		if errors.Is(err, auth.ErrInvalidToken) || errors.Is(err, auth.ErrExpiredToken){
 			http.Error(w, "Invalid or expired refresh token", http.StatusUnauthorized)

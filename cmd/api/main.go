@@ -23,13 +23,23 @@ func loadEnv() {
 		log.Print("No .env file found, using environment variable")
 	}
 
-	// Check required variables
-	requiredVars := []string{"JWT_SECRET"}
+	// Check all required variables
+	requiredVars := []string{
+		"JWT_SECRET",
+		"REFRESH_SECRET",
+		"ACCESS_TOKEN_EXPIRY",
+	}
+
+	missing := []string{}
 	for _, v := range requiredVars {
 		if os.Getenv(v) == "" {
-			log.Fatalf("Required environment variable  %s is not set", v)
+			missing = append(missing, v)
 		}
 	}
+
+	if len(missing) > 0 {
+			log.Fatalf("Required environment variable  %s is missing", missing)
+		}
 }
 
 func main() {
@@ -37,33 +47,51 @@ func main() {
 	loadEnv()
 
 	// Set up databases
-	var refreshTokenDb = db.SetupRefreshTokenDB()
-	var userDb = db.SetupTestUserDB()
+	refreshTokenDb := db.SetupRefreshTokenDB()
+	userDb := db.SetupTestUserDB()
 
 	// Create repositories
 	tokenRepo := repository.NewRefreshTokenRepository(refreshTokenDb)
 	userRepo := repository.NewUserRepository(userDb)
 
 	// Parse token duration
-	TTL, err := time.ParseDuration(os.Getenv("ACCESS_TOKEN_EXPIRY"))
+	accessTTL, err := time.ParseDuration(os.Getenv("ACCESS_TOKEN_EXPIRY"))
 	if err != nil {
-		log.Fatalf("Error parsing duration:%v", err.Error())
+		log.Fatalf("Invalid ACCESS_TOKEN_EXPIRY: %v", err)
 	}
 
-	// Create services
-	authService := auth.NewAuthService(userRepo, tokenRepo, os.Getenv("JWT_SECRET"), TTL)
+	refreshTTL, err := time.ParseDuration(os.Getenv("REFRESH_TOKEN_EXPIRY"))
+	if err != nil {
+		log.Fatalf("Invalid REFRESH_TOKEN_EXPIRY: %v", err)
+	}
+
+	// Create  auth service
+	authService := auth.NewAuthService(
+		userRepo,
+		tokenRepo,
+		os.Getenv("JWT_SECRET"),
+		os.Getenv("REFRESH_SECRET"),
+		accessTTL,
+		refreshTTL,
+	)
 
 	// Create handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	userHandler := handlers.NewUserHandler(userRepo)
 
-	// Create New Router
+	// Create router
 	r := mux.NewRouter()
 
 	// Public Routes
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "Welcome to Golden Market!\n")
 	})
+
+	// Health check endpoint
+	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		io.WriteString(w, "OK")
+	}).Methods("GET")
 
 	// Public pages
 	r.HandleFunc("/api/v1/auth/login", func(w http.ResponseWriter, r *http.Request) {
@@ -74,22 +102,22 @@ func main() {
 		http.ServeFile(w, r, "public/register.html")
 	}).Methods("GET")
 
-	// Auth API
+	// Auth API Endpoints
 	r.HandleFunc("/api/v1/auth/register", authHandler.Register).Methods("POST")
-	r.HandleFunc("/api/v1/auth/login", authHandler.Login).Methods("POST")
+	r.HandleFunc("/api/v1/auth/login", authHandler.LoginWithRefresh).Methods("POST")
 	r.HandleFunc("/api/v1/auth/refresh", authHandler.RefreshToken).Methods("POST")
 
 	// Protected routes
-	protected := r.PathPrefix("/api").Subrouter()
-
+	protected := r.PathPrefix("/api/v1").Subrouter()
 	protected.Use(middleware.AuthMiddleware(authService))
-
 	protected.HandleFunc("/profile", userHandler.Profile).Methods("GET")
 
+	// Start server
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "localhost:8080"
+		port = "8080"
 	}
-	log.Printf("Server starting on %s", port)
-	log.Fatal(http.ListenAndServe(port, r))
+	addr:= ":" + port
+	log.Printf("Server starting on port %s", port)
+	log.Fatal(http.ListenAndServe(addr, r))
 }
