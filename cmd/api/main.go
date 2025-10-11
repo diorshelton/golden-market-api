@@ -108,7 +108,7 @@ func main() {
 	r.HandleFunc("/api/v1/auth/refresh", authHandler.RefreshToken).Methods("POST")
 
 	// Protected routes
-	protected := r.PathPrefix("/api").Subrouter()
+	protected := r.PathPrefix("/api/v1").Subrouter()
 	protected.Use(middleware.AuthMiddleware(authService))
 	protected.HandleFunc("/profile", userHandler.Profile).Methods("GET")
 

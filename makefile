@@ -23,6 +23,7 @@ dev:
 build:
 	@echo "Building application..."
 	go build -o bin/api ./cmd/api
+	codesign -s - bin/api
 	@echo "Build complete: bin/api"
 
 test:
