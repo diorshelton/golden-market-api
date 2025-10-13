@@ -24,20 +24,20 @@ func NewAuthHandler(authService *auth.AuthService) *AuthHandler {
 
 // RegisterRequest represents the registration payload
 type RegisterRequest struct {
-	Username    string    `json:"username"`
-	FirstName   string    `json:"first_name"`
-	LastName    string    `json:"last_name"`
-	Email       string    `json:"email"`
-	Password    string    `json:"password"`
+	Username  string `json:"username"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
 }
 
 // RegisterResponse contains the user data after successful registration
 type RegisterResponse struct {
-	ID string `json:"id"`
-	Username    string    `json:"username"`
-	FirstName   string    `json:"first_name"`
-	LastName    string    `json:"last_name"`
-	Email       string    `json:"email"`
+	ID        string `json:"id"`
+	Username  string `json:"username"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Email     string `json:"email"`
 }
 
 // Register handles user registration
@@ -48,7 +48,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-// Extract form data and tri
+	// Extract form data and tri
 	username := strings.TrimSpace(r.Form.Get("username"))
 	firstName := strings.TrimSpace(r.Form.Get("first_name"))
 	lastName := strings.TrimSpace(r.Form.Get("last_name"))
@@ -57,13 +57,13 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	passwordConfirm := strings.TrimSpace(r.Form.Get("password_confirm"))
 
 	// Validate input
-	if err := validateInput(username, firstName, lastName, email, password,passwordConfirm); err != nil {
+	if err := validateInput(username, firstName, lastName, email, password, passwordConfirm); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-// Call the auth service
-	user, err := h.authService.Register(firstName, lastName, email, username,password)
+	// Call the auth service
+	user, err := h.authService.Register(firstName, lastName, email, username, password)
 	if err != nil {
 		if errors.Is(err, auth.ErrEmailInUse) {
 			http.Error(w, "Email already in use", http.StatusConflict)
@@ -75,12 +75,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Return response
-	response := RegisterResponse {
-		ID: user.ID.String(),
-		Username: user.Username,
+	response := RegisterResponse{
+		ID:        user.ID.String(),
+		Username:  user.Username,
 		FirstName: user.FirstName,
-		LastName: user.LastName,
-		Email: user.Email,
+		LastName:  user.LastName,
+		Email:     user.Email,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -89,9 +89,9 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 // Validates form input from user's POST request
-func validateInput(username,firstName, lastName, email, password, passwordConfirm string,) error {
+func validateInput(username, firstName, lastName, email, password, passwordConfirm string) error {
 	// Check values for empty strings
-	if username == "" || firstName == "" || lastName == "" || email == "" || password == ""{
+	if username == "" || firstName == "" || lastName == "" || email == "" || password == "" {
 		return errors.New("all fields required")
 	}
 
@@ -104,12 +104,12 @@ func validateInput(username,firstName, lastName, email, password, passwordConfir
 	if _, err := mail.ParseAddress(email); err != nil {
 		return errors.New("invalid email address")
 	}
-	return  nil
+	return nil
 }
 
 // LoginRequest represents the login payload
 type LoginRequest struct {
-	Email string `json:"email"`
+	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
@@ -118,10 +118,10 @@ type LoginResponse struct {
 	Token string `json:"token"`
 }
 
-//  Login handles user login
+// Login handles user login
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	// Parse form data
-		if err := r.ParseForm(); err != nil {
+	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
 		return
 	}
@@ -158,15 +158,15 @@ type RefreshResponse struct {
 
 type AccessAndRefreshResponse struct {
 	AccessToken  string `json:"access_token"`
-	RefreshToken  string `json:"refresh_token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 // LoginWithRefresh handles user login with access and refresh tokens
-func(h *AuthHandler) LoginWithRefresh(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) LoginWithRefresh(w http.ResponseWriter, r *http.Request) {
 	// Parse form data
 	if err := r.ParseForm(); err != nil {
-	http.Error(w, "Failed to parse form data", http.StatusBadRequest)
-	return
+		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
+		return
 	}
 
 	email := strings.TrimSpace(r.Form.Get("email"))
@@ -185,7 +185,7 @@ func(h *AuthHandler) LoginWithRefresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Return access and refresh tokens
-	response := AccessAndRefreshResponse{AccessToken:accessToken, RefreshToken: refreshToken}
+	response := AccessAndRefreshResponse{AccessToken: accessToken, RefreshToken: refreshToken}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
@@ -193,17 +193,17 @@ func(h *AuthHandler) LoginWithRefresh(w http.ResponseWriter, r *http.Request) {
 // RefreshToken handles access token refresh
 func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 
-		// Parse form data
+	// Parse form data
 	if err := r.ParseForm(); err != nil {
-	http.Error(w, "Failed to parse form data", http.StatusBadRequest)
-	return
+		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
+		return
 	}
 	refreshToken := strings.TrimSpace(r.Form.Get("refresh_token"))
 
 	// Attempt to refresh the token
 	token, err := h.authService.RefreshAccessToken(refreshToken)
 	if err != nil {
-		if errors.Is(err, auth.ErrInvalidToken) || errors.Is(err, auth.ErrExpiredToken){
+		if errors.Is(err, auth.ErrInvalidToken) || errors.Is(err, auth.ErrExpiredToken) {
 			http.Error(w, "Invalid or expired refresh token", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)

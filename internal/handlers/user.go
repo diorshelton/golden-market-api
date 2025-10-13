@@ -8,7 +8,7 @@ import (
 	"github.com/diorshelton/golden-market/internal/repository"
 )
 
-//  UserHandler contains HTTP handlers for user-related endpoints
+// UserHandler contains HTTP handlers for user-related endpoints
 type UserHandler struct {
 	userRepo *repository.UserRepository
 }
@@ -22,8 +22,8 @@ func NewUserHandler(userRepo *repository.UserRepository) *UserHandler {
 
 // UserResponse represents the user data returned to clients
 type UserResponse struct {
-	ID string `json:"id"`
-	Email string `json:"email"`
+	ID       string `json:"id"`
+	Email    string `json:"email"`
 	Username string `json:"username"`
 }
 
@@ -44,9 +44,9 @@ func (h *UserHandler) Profile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Return user profile (excluding sensitive data)
-	response := UserResponse {
-		ID: user.ID.String(),
-		Email: user.Email,
+	response := UserResponse{
+		ID:       user.ID.String(),
+		Email:    user.Email,
 		Username: user.Username,
 	}
 

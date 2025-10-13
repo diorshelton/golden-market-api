@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 )
 
-
 // UserRepository handles database operations for users
 type UserRepository struct {
 	db *sql.DB
@@ -135,5 +134,3 @@ func (r *UserRepository) GetUserByID(id uuid.UUID) (*models.User, error) {
 // 	_, err := r.db.Exec(query, time.Now().UTC(), userID)
 // 	return err
 // }
-
-

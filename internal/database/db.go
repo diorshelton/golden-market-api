@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	_ "github.com/mattn/go-sqlite3"
-
 )
 
 // SetupTestUserDB creates a temporary in memory test user database
@@ -32,7 +31,7 @@ func SetupTestUserDB() *sql.DB {
 	if err != nil {
 		fmt.Printf("Failed to create table: %v", err)
 	}
-	return  db
+	return db
 }
 
 // SetupTestUserDB creates a temporary in memory test refresh token database
@@ -56,5 +55,5 @@ func SetupRefreshTokenDB() *sql.DB {
 	if err != nil {
 		fmt.Printf("Failed to create table: %v", err)
 	}
-	return  db
+	return db
 }

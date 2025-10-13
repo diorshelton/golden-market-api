@@ -19,4 +19,3 @@ type User struct {
 	CreatedAt    time.Time `json:"created_at"`
 	LastLogin    time.Time `json:"last_login"`
 }
-

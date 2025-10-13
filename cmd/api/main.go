@@ -38,8 +38,8 @@ func loadEnv() {
 	}
 
 	if len(missing) > 0 {
-			log.Fatalf("Required environment variable  %s is missing", missing)
-		}
+		log.Fatalf("Required environment variable  %s is missing", missing)
+	}
 }
 
 func main() {
@@ -117,7 +117,7 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	addr:= ":" + port
+	addr := ":" + port
 	log.Printf("Server starting on port %s", port)
 	log.Fatal(http.ListenAndServe(addr, r))
 }

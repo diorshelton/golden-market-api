@@ -5,6 +5,8 @@ help:
 	@echo "  make run          - Run the application"
 	@echo "  make dev          - Run with auto-reload (requires air)"
 	@echo "  make build        - Build the application"
+	@echo "  make fmt          - Format the code using gofmt"
+	@echo "  make vet          - Vet the code for potential issues"
 	@echo "  make test         - Run all tests"
 	@echo "  make test-verbose - Run tests with verbose output"
 	@echo "  make clean        - Remove build artifacts"
@@ -25,6 +27,16 @@ build:
 	go build -o bin/api ./cmd/api
 	codesign -s - bin/api
 	@echo "Build complete: bin/api"
+
+fmt:
+	@echo "Formatting code..."
+	go fmt ./...
+	@echo "Code formatted."
+
+vet:
+	@echo "Vetting code..."
+	go vet ./...
+	@echo "Code vetted."
 
 test:
 	@echo "Running tests..."
