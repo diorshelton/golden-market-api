@@ -100,7 +100,7 @@ func main() {
 
 	r.HandleFunc("/api/v1/auth/register", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "public/register.html")
-	}).Methods("GET"     )
+	}).Methods("GET")
 
 	// Auth API Endpoints
 	r.HandleFunc("/api/v1/auth/register", authHandler.Register).Methods("POST")

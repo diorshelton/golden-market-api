@@ -95,6 +95,14 @@ func validateInput(username, firstName, lastName, email, password, passwordConfi
 		return errors.New("all fields required")
 	}
 
+	if len(username) < 3 || len(username) > 30 {
+		return errors.New("username must be between 3 and 30 characters")
+	}
+
+	if len(password) < 8 || len(password) > 16 {
+		return errors.New("password must be between 8 and 16 characters")
+	}
+
 	// Verify both passwords match
 	if password != passwordConfirm {
 		return errors.New("passwords must match")
