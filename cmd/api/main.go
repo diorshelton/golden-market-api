@@ -47,12 +47,11 @@ func main() {
 	loadEnv()
 
 	// Set up databases
-	refreshTokenDb := db.SetupRefreshTokenDB()
-	userDb := db.SetupTestUserDB()
+	database := db.SetupTestDB()
 
 	// Create repositories
-	tokenRepo := repository.NewRefreshTokenRepository(refreshTokenDb)
-	userRepo := repository.NewUserRepository(userDb)
+	tokenRepo := repository.NewRefreshTokenRepository(database)
+	userRepo := repository.NewUserRepository(database)
 
 	// Parse token duration
 	accessTTL, err := time.ParseDuration(os.Getenv("ACCESS_TOKEN_EXPIRY"))

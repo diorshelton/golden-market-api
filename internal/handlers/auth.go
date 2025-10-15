@@ -156,16 +156,17 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, auth.ErrInvalidToken) || errors.Is(err, auth.ErrExpiredToken) {
 			http.Error(w, "Invalid or expired refresh token", http.StatusUnauthorized)
 		} else {
+			log.Printf("Internal server error during token refresh: %v", err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 		}
 		return
 	}
 	// Set new refresh token in HttpOnly cookie
 	http.SetCookie(w, &http.Cookie{
-		Name:  "refresh_token",
-		Value: tokenPair.RefreshToken, //New rotated token
-		Path:  "/",
-		// MaxAge: os.Getenv("REFRESH_TOKEN_EXPIRY"),
+		Name:     "refresh_token",
+		Value:    tokenPair.RefreshToken, //New rotated token
+		Path:     "/",
+		MaxAge:   7 * 24 * 60 * 60,
 		HttpOnly: true,
 		Secure:   true, // Set to true in production
 		SameSite: http.SameSiteStrictMode,
