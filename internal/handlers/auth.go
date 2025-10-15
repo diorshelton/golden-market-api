@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"net/mail"
 	"strings"
@@ -88,6 +89,93 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// LoginResponse contains the JWT token after successful login
+type LoginResponse struct {
+	AccessToken string `json:"token"`
+}
+
+// Login handles user login with access and refresh tokens
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	// Parse form data
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
+		return
+	}
+
+	email := strings.TrimSpace(r.Form.Get("email"))
+	password := strings.TrimSpace(r.Form.Get("password"))
+
+	// Attempt to login
+	accessToken, refreshToken, err := h.authService.Login(email, password)
+	if err != nil {
+		if errors.Is(err, auth.ErrInvalidCredentials) {
+			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		} else {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Set refresh token in HttpOnly cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		Path:     "/",
+		MaxAge:   7 * 24 * 60 * 60, // 7 days
+		HttpOnly: true,
+		Secure:   true, // Set to true in production
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	response := LoginResponse{AccessToken: accessToken}
+
+	// Return access tokens
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+type RefreshResponse struct {
+	Token string `json:"token"`
+}
+
+// RefreshToken handles access token refresh
+func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
+	// Read old refresh token from  cookie
+	cookie, err := r.Cookie("refresh_token")
+	if err != nil {
+		http.Error(w, "Refresh token not found", http.StatusBadRequest)
+		return
+	}
+
+	oldRefreshToken := cookie.Value
+
+	// Refresh and rotate tokens
+	tokenPair, err := h.authService.Refresh(oldRefreshToken)
+	if err != nil {
+		log.Printf("RefreshAccessToken failed: %v", err)
+		if errors.Is(err, auth.ErrInvalidToken) || errors.Is(err, auth.ErrExpiredToken) {
+			http.Error(w, "Invalid or expired refresh token", http.StatusUnauthorized)
+		} else {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+	// Set new refresh token in HttpOnly cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:  "refresh_token",
+		Value: tokenPair.RefreshToken, //New rotated token
+		Path:  "/",
+		// MaxAge: os.Getenv("REFRESH_TOKEN_EXPIRY"),
+		HttpOnly: true,
+		Secure:   true, // Set to true in production
+		SameSite: http.SameSiteStrictMode,
+	})
+	// Return the new access token
+	response := RefreshResponse{Token: tokenPair.AccessToken}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
 // Validates form input from user's POST request
 func validateInput(username, firstName, lastName, email, password, passwordConfirm string) error {
 	// Check values for empty strings
@@ -113,114 +201,4 @@ func validateInput(username, firstName, lastName, email, password, passwordConfi
 		return errors.New("invalid email address")
 	}
 	return nil
-}
-
-// LoginRequest represents the login payload
-type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
-// LoginResponse contains the JWT token after successful login
-type LoginResponse struct {
-	Token string `json:"token"`
-}
-
-// Login handles user login
-func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	// Parse form data
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
-		return
-	}
-
-	email := strings.TrimSpace(r.Form.Get("email"))
-	password := strings.TrimSpace(r.Form.Get("password"))
-
-	// Attempt to login
-	token, err := h.authService.Login(email, password)
-	if err != nil {
-		if errors.Is(err, auth.ErrInvalidCredentials) {
-			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		} else {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-		}
-		return
-	}
-
-	// Return token
-	response := LoginResponse{Token: token}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
-}
-
-// RefreshRequest represents the refresh token payload
-type RefreshRequest struct {
-	RefreshToken string `json:"refresh_token"`
-}
-
-// RefreshResponse contains the new access token
-type RefreshResponse struct {
-	Token string `json:"token"`
-}
-
-type AccessAndRefreshResponse struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-}
-
-// LoginWithRefresh handles user login with access and refresh tokens
-func (h *AuthHandler) LoginWithRefresh(w http.ResponseWriter, r *http.Request) {
-	// Parse form data
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
-		return
-	}
-
-	email := strings.TrimSpace(r.Form.Get("email"))
-	password := strings.TrimSpace(r.Form.Get("password"))
-
-	// Attempt to login
-	accessToken, refreshToken, err := h.authService.LoginWithRefresh(email, password)
-
-	if err != nil {
-		if errors.Is(err, auth.ErrInvalidCredentials) {
-			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		} else {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-		}
-		return
-	}
-
-	// Return access and refresh tokens
-	response := AccessAndRefreshResponse{AccessToken: accessToken, RefreshToken: refreshToken}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
-}
-
-// RefreshToken handles access token refresh
-func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
-
-	// Parse form data
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
-		return
-	}
-	refreshToken := strings.TrimSpace(r.Form.Get("refresh_token"))
-
-	// Attempt to refresh the token
-	token, err := h.authService.RefreshAccessToken(refreshToken)
-	if err != nil {
-		if errors.Is(err, auth.ErrInvalidToken) || errors.Is(err, auth.ErrExpiredToken) {
-			http.Error(w, "Invalid or expired refresh token", http.StatusUnauthorized)
-		} else {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-		}
-		return
-	}
-
-	// Return the new access token
-	response := RefreshResponse{Token: token}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
 }

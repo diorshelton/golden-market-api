@@ -1,7 +1,9 @@
 package repository
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"time"
 
 	"github.com/diorshelton/golden-market/internal/models"
@@ -13,21 +15,27 @@ type RefreshTokenRepository struct {
 	db *sql.DB
 }
 
-// NewRefreshTokenRepository creates a new refresh token repository
 func NewRefreshTokenRepository(db *sql.DB) *RefreshTokenRepository {
 	return &RefreshTokenRepository{db: db}
 }
 
-// CreateRefreshToken creates a new refresh token for a user
+// CreateRefreshToken creates a new refresh token for a user with secure random token
 func (r *RefreshTokenRepository) CreateRefreshToken(userID uuid.UUID, ttl time.Duration) (*models.RefreshToken, error) {
-	// Generate a unique token identifier
+	// Generate a random token
+	tokenBytes := make([]byte, 32)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		return nil, err
+	}
+	tokenString := hex.EncodeToString(tokenBytes)
+
+	//Create UUID for the tokenID
 	tokenID := uuid.New()
 	expiresAt := time.Now().Add(ttl)
 
 	token := &models.RefreshToken{
 		ID:        tokenID,
 		UserID:    userID,
-		Token:     tokenID.String(), // Use the UUID as the token
+		Token:     tokenString, // secure random. token
 		ExpiresAt: expiresAt,
 		CreatedAt: time.Now(),
 		Revoked:   false,
@@ -78,17 +86,17 @@ func (r *RefreshTokenRepository) GetRefreshToken(tokenString string) (*models.Re
 	return &token, nil
 }
 
-// // RevokeRefreshToken marks a refresh token as revoked
-// func (r *RefreshTokenRepository) RevokeRefreshToken(tokenString string) error {
-// 	query := `
-// 		UPDATE refresh_tokens
-// 		SET revoked = true
-// 		WHERE token = ?
-// 	`
+// RevokeRefreshToken marks a refresh token as revoked
+func (r *RefreshTokenRepository) RevokeRefreshToken(tokenString string) error {
+	query := `
+		UPDATE refresh_tokens
+		SET revoked = true
+		WHERE token = ?
+	`
 
-// 	_, err := r.db.Exec(query, tokenString)
-// 	return err
-// }
+	_, err := r.db.Exec(query, tokenString)
+	return err
+}
 
 // // RevokeAllUserTokens revokes all refresh tokens for a specific user
 // func (r *RefreshTokenRepository) RevokeAllUserTokens(userID uuid.UUID) error {

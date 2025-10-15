@@ -104,8 +104,8 @@ func main() {
 
 	// Auth API Endpoints
 	r.HandleFunc("/api/v1/auth/register", authHandler.Register).Methods("POST")
-	r.HandleFunc("/api/v1/auth/login", authHandler.LoginWithRefresh).Methods("POST")
-	r.HandleFunc("/api/v1/auth/refresh", authHandler.RefreshToken).Methods("POST")
+	r.HandleFunc("/api/v1/auth/login", authHandler.Login).Methods("POST")
+	r.HandleFunc("/api/v1/auth/refresh", authHandler.Refresh).Methods("POST")
 
 	// Protected routes
 	protected := r.PathPrefix("/api/v1").Subrouter()
