@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"net/mail"
 	"strings"
@@ -172,6 +173,48 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	response := RefreshResponse{Token: tokenPair.AccessToken}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// Logout of current device
+func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	// Read refresh token from cookie
+	cookie, err := r.Cookie("refresh_token")
+	if err != nil {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "refresh_token",
+			Value:    "",
+			Path:     "/",
+			MaxAge:   -1, // Expire the cookie
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteDefaultMode,
+		})
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})
+		return
+	}
+
+	refreshToken := cookie.Value
+
+	// Delete the refresh token from the database
+	err = h.authService.Logout(refreshToken)
+	if err != nil {
+		log.Printf("Failed to delete refresh. token: %v", err)
+	}
+
+	// Clear cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1, // Expire cookie
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteDefaultMode,
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})
 }
 
 // Validates form input from user's POST request

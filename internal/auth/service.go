@@ -209,6 +209,10 @@ func (s *AuthService) Refresh(oldRefreshToken string) (*TokenPair, error) {
 	}, nil
 }
 
+func (s *AuthService) Logout(tokenString string) error {
+	return s.refreshTokenRepo.DeleteRefreshToken(tokenString)
+}
+
 // hashPassword hashes a plaintext password using bcrypt
 func hashPassword(password string) (string, error) {
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
