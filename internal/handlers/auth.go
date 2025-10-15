@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"net/mail"
 	"strings"
@@ -152,11 +151,9 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	// Refresh and rotate tokens
 	tokenPair, err := h.authService.Refresh(oldRefreshToken)
 	if err != nil {
-		log.Printf("RefreshAccessToken failed: %v", err)
 		if errors.Is(err, auth.ErrInvalidToken) || errors.Is(err, auth.ErrExpiredToken) {
 			http.Error(w, "Invalid or expired refresh token", http.StatusUnauthorized)
 		} else {
-			log.Printf("Internal server error during token refresh: %v", err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 		}
 		return

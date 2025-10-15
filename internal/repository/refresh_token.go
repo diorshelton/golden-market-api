@@ -86,16 +86,6 @@ func (r *RefreshTokenRepository) GetRefreshToken(tokenString string) (*models.Re
 	return &token, nil
 }
 
-func (r *RefreshTokenRepository) DeleteRefreshToken(tokenString string) error {
-	query := `
-		DELETE FROM refresh_tokens
-		WHERE token = ?
-	`
-
-	_, err := r.db.Exec(query, tokenString)
-	return err
-}
-
 // RevokeRefreshToken marks a refresh token as revoked
 func (r *RefreshTokenRepository) RevokeRefreshToken(tokenString string) error {
 	query := `
