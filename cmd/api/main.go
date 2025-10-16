@@ -93,22 +93,25 @@ func main() {
 	}).Methods("GET")
 
 	// Public pages
-	r.HandleFunc("/api/v1/auth/login", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/api/v1/login", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "public/login.html")
 	}).Methods("GET")
 
-	r.HandleFunc("/api/v1/auth/register", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/api/v1/register", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "public/register.html")
 	}).Methods("GET")
 
-	// Auth API Endpoints
-	r.HandleFunc("/api/v1/auth/register", authHandler.Register).Methods("POST")
-	r.HandleFunc("/api/v1/auth/login", authHandler.Login).Methods("POST")
-	r.HandleFunc("/api/v1/auth/refresh", authHandler.Refresh).Methods("POST")
-	r.HandleFunc("/api/v1/auth/logout", authHandler.Logout).Methods("POST")
+	// --- Auth API Endpoints (rate limited) ---
+	authRouter := r.PathPrefix("/api/v1/auth").Subrouter()
+	authRouter.Use(middleware.RateLimitMiddleware)
 
-	// Protected routes
-	protected := r.PathPrefix("/api/v1").Subrouter()
+	authRouter.HandleFunc("/register", authHandler.Register).Methods("POST")
+	authRouter.HandleFunc("/login", authHandler.Login).Methods("POST")
+	authRouter.HandleFunc("/refresh", authHandler.Refresh).Methods("POST")
+	authRouter.HandleFunc("/logout", authHandler.Logout).Methods("POST")
+
+	// --- Protected routes ---
+	protected := r.PathPrefix("/auth/").Subrouter()
 	protected.Use(middleware.AuthMiddleware(authService))
 	protected.HandleFunc("/profile", userHandler.Profile).Methods("GET")
 
