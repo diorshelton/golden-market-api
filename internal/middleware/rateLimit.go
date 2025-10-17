@@ -27,7 +27,7 @@ func getClient(ip string) *rate.Limiter {
 
 	c, exists := clients[ip]
 	if !exists {
-		limiter := rate.NewLimiter(rate.Every(time.Second), 2) // 1 request per second, burst of 3
+		limiter := rate.NewLimiter(rate.Every(time.Second), 5) // 1 request per second, burst of 5
 		clients[ip] = &client{limiter, time.Now()}
 		return limiter
 	}
@@ -51,7 +51,7 @@ func cleanupClients() {
 }
 
 // RateLimitMiddleware limits the number of requests per client IP
-func RateLimitMiddleware(next http.Handler) http.Handler {
+func RateLimit(next http.Handler) http.Handler {
 	// start cleanup goroutine only once
 	once.Do(func() {
 		go cleanupClients()

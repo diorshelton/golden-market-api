@@ -103,7 +103,7 @@ func main() {
 
 	// --- Auth API Endpoints (rate limited) ---
 	authRouter := r.PathPrefix("/api/v1/auth").Subrouter()
-	authRouter.Use(middleware.RateLimitMiddleware)
+	authRouter.Use(middleware.RateLimit)
 
 	authRouter.HandleFunc("/register", authHandler.Register).Methods("POST")
 	authRouter.HandleFunc("/login", authHandler.Login).Methods("POST")
@@ -111,7 +111,7 @@ func main() {
 	authRouter.HandleFunc("/logout", authHandler.Logout).Methods("POST")
 
 	// --- Protected routes ---
-	protected := r.PathPrefix("/auth/").Subrouter()
+	protected := r.PathPrefix("/api/v1").Subrouter()
 	protected.Use(middleware.AuthMiddleware(authService))
 	protected.HandleFunc("/profile", userHandler.Profile).Methods("GET")
 

@@ -87,8 +87,7 @@ func (r *RefreshTokenRepository) GetRefreshToken(tokenString string) (*models.Re
 }
 
 func (r *RefreshTokenRepository) DeleteRefreshToken(tokenString string) error {
-	query :=
-		`
+	query := `
 		DELETE FROM refresh_tokens
 		WHERE token = ?
 	`
@@ -109,6 +108,17 @@ func (r *RefreshTokenRepository) RevokeRefreshToken(tokenString string) error {
 	return err
 }
 
+// DeleteExpiredTokens removes all expired tokens from the database
+func (r *RefreshTokenRepository) DeleteExpiredTokens() error {
+	query := `
+		DELETE FROM refresh_tokens
+		WHERE expires_at < ?
+	`
+
+	_, err := r.db.Exec(query, time.Now())
+	return err
+}
+
 // // RevokeAllUserTokens revokes all refresh tokens for a specific user
 // func (r *RefreshTokenRepository) RevokeAllUserTokens(userID uuid.UUID) error {
 // 	query := `
@@ -118,16 +128,5 @@ func (r *RefreshTokenRepository) RevokeRefreshToken(tokenString string) error {
 // 	`
 
 // 	_, err := r.db.Exec(query, userID)
-// 	return err
-// }
-
-// // DeleteExpiredTokens removes all expired tokens from the database
-// func (r *RefreshTokenRepository) DeleteExpiredTokens() error {
-// 	query := `
-// 		DELETE FROM refresh_tokens
-// 		WHERE expires_at < ?
-// 	`
-
-// 	_, err := r.db.Exec(query, time.Now())
 // 	return err
 // }

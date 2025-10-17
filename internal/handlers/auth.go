@@ -166,7 +166,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		MaxAge:   7 * 24 * 60 * 60,
 		HttpOnly: true,
-		Secure:   true, // Set to true in production
+		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
 	})
 	// Return the new access token
@@ -187,7 +187,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 			MaxAge:   -1, // Expire the cookie
 			HttpOnly: true,
 			Secure:   true,
-			SameSite: http.SameSiteDefaultMode,
+			SameSite: http.SameSiteStrictMode,
 		})
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})
@@ -200,6 +200,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	err = h.authService.Logout(refreshToken)
 	if err != nil {
 		log.Printf("Failed to delete refresh. token: %v", err)
+		// Continue to clear cookie even if error occurs
 	}
 
 	// Clear cookie
@@ -210,7 +211,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   -1, // Expire cookie
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteDefaultMode,
+		SameSite: http.SameSiteStrictMode,
 	})
 
 	w.Header().Set("Content-Type", "application/json")

@@ -184,20 +184,20 @@ func (s *AuthService) Refresh(oldRefreshToken string) (*TokenPair, error) {
 		return nil, err
 	}
 
-	// Revoke old refresh token
-	err = s.refreshTokenRepo.RevokeRefreshToken(oldRefreshToken)
-	if err != nil {
-		return nil, err
-	}
-
-	// Generate a new access token
-	accessToken, err := s.generateAccessToken(user)
+	// Delete old refresh token
+	err = s.refreshTokenRepo.DeleteRefreshToken(oldRefreshToken)
 	if err != nil {
 		return nil, err
 	}
 
 	// Generate a new refresh token (rotated)
 	newRefreshToken, err := s.refreshTokenRepo.CreateRefreshToken(user.ID, s.refreshTokenTTL)
+	if err != nil {
+		return nil, err
+	}
+
+	// Generate a new access token
+	accessToken, err := s.generateAccessToken(user)
 	if err != nil {
 		return nil, err
 	}
