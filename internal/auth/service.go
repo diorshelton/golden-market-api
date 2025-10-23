@@ -160,7 +160,7 @@ type TokenPair struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-// Refresh creates a new access and refresh tokens
+// Refresh creates new access and refresh tokens
 func (s *AuthService) Refresh(oldRefreshToken string) (*TokenPair, error) {
 	// Retrieve old refresh token
 	token, err := s.refreshTokenRepo.GetRefreshToken(oldRefreshToken)

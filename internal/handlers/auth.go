@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/mail"
 	"strings"
+	"time"
 
 	"github.com/diorshelton/golden-market/internal/auth"
 )
@@ -116,15 +117,18 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	maxAge := int((7 * 24 * time.Hour).Seconds())
+
 	// Set refresh token in HttpOnly cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    refreshToken,
 		Path:     "/",
-		MaxAge:   7 * 24 * 60 * 60, // 7 days
+		MaxAge:   maxAge,
 		HttpOnly: true,
-		Secure:   true, // Set to true in production
+		Secure:  true,
 		SameSite: http.SameSiteStrictMode,
+		Expires: time.Now().Add(7 * 24 * time.Hour),
 	})
 
 	response := LoginResponse{AccessToken: accessToken}
@@ -159,12 +163,13 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	maxAge := int((7 * 24 * time.Hour).Seconds())
 	// Set new refresh token in HttpOnly cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    tokenPair.RefreshToken, //New rotated token
 		Path:     "/",
-		MaxAge:   7 * 24 * 60 * 60,
+		MaxAge:   maxAge,
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
