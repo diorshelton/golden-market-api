@@ -10,17 +10,25 @@ import (
 	"time"
 
 	"github.com/diorshelton/golden-market/internal/auth"
+	"github.com/diorshelton/golden-market/internal/models"
 )
+
+type AuthServiceInterface interface {
+	Register(firstName, lastName, email, username, password string) (*models.User, error)
+	Login(email, password string) (string, string, error)
+	Refresh(oldRefreshToken string) (*auth.TokenPair, error)
+	Logout(refreshToken string) error
+}
 
 // AuthHandler contains HTTP handlers for authentication
 type AuthHandler struct {
-	authService *auth.AuthService
+	authService AuthServiceInterface
 }
 
 // NewAuthHandler creates a new auth handler
-func NewAuthHandler(authService *auth.AuthService) *AuthHandler {
+func NewAuthHandler(service AuthServiceInterface) *AuthHandler {
 	return &AuthHandler{
-		authService: authService,
+		authService: service,
 	}
 }
 
@@ -40,6 +48,7 @@ type RegisterResponse struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 	Email     string `json:"email"`
+	Message   string `json:"message"`
 }
 
 // Register handles user registration
@@ -72,7 +81,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		http.Error(w, "Error creating user", http.StatusInternalServerError)
+		http.Error(w, "Error creating user", http.StatusConflict)
 		return
 	}
 
@@ -83,6 +92,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Email:     user.Email,
+		Message:   "Registration successful",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -126,9 +136,9 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		MaxAge:   maxAge,
 		HttpOnly: true,
-		Secure:  true,
+		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
-		Expires: time.Now().Add(7 * 24 * time.Hour),
+		Expires:  time.Now().Add(7 * 24 * time.Hour),
 	})
 
 	response := LoginResponse{AccessToken: accessToken}
