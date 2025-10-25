@@ -116,6 +116,13 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	email := strings.TrimSpace(r.Form.Get("email"))
 	password := strings.TrimSpace(r.Form.Get("password"))
 
+	// Basic validation: avoid calling service with empty credentials
+	if email == "" || password == "" {
+		// Tests expect Unauthorized for missing credentials
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
 	// Attempt to login
 	accessToken, refreshToken, err := h.authService.Login(email, password)
 	if err != nil {

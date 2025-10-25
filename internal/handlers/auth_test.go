@@ -141,3 +141,88 @@ func TestRegisterHandler(t *testing.T) {
 		})
 	}
 }
+
+func TestLoginHandler(t *testing.T) {
+	tests := []struct {
+		name           string
+		formData       url.Values
+		mockLogin      func(email, password string) (string, string, error)
+		expectedStatus int
+		checkCookie    bool
+	}{
+		{
+			name: "successful login",
+			formData: url.Values{
+				"email":    []string{"john@example.com"},
+				"password": []string{"password123"},
+			},
+			mockLogin: func(email string, password string) (string, string, error) {
+				return "access_token_here",
+					"refresh_token_here", nil
+			},
+			expectedStatus: http.StatusOK,
+			checkCookie:    true,
+		},
+		{
+			name: "invalid credentials",
+			formData: url.Values{
+				"email":    []string{"john@example.com"},
+				"password": []string{"wrongpassword"},
+			},
+			mockLogin: func(email string, password string) (string, string, error) {
+				return "", "", auth.ErrInvalidCredentials
+			},
+			expectedStatus: http.StatusUnauthorized,
+			checkCookie:    false,
+		},
+		{
+			name: "missing email",
+			formData: url.Values{
+				"email":    []string{" "},
+				"password": []string{" "},
+			},
+			mockLogin:      nil,
+			expectedStatus: http.StatusUnauthorized,
+			checkCookie:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockService := &MockAuthService{
+				LoginFunc: tt.mockLogin,
+			}
+			handler := NewAuthHandler(mockService)
+
+			req := httptest.NewRequest(http.MethodPost, "/auth/login", nil)
+			req.Form = tt.formData
+			req.PostForm = tt.formData
+
+			rr := httptest.NewRecorder()
+			handler.Login(rr, req)
+
+			if rr.Code != tt.expectedStatus {
+				t.Errorf("Expected status %d, got %d", tt.expectedStatus, rr.Code)
+			}
+
+			if tt.checkCookie {
+				cookies := rr.Result().Cookies()
+				found := false
+				for _, cookie := range cookies {
+					if cookie.Name == "refresh_token" {
+						found = true
+						if !cookie.HttpOnly {
+							t.Error("Expected refresh_token cookie to be HttpOnly")
+						}
+						if cookie.SameSite != http.SameSiteStrictMode {
+							t.Error("Expected refresh_token cookie to have SameSite=Strict")
+						}
+					}
+				}
+				if !found {
+					t.Error("Expected refresh_token cookie to be set")
+				}
+			}
+		})
+	}
+}
