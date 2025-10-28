@@ -87,6 +87,39 @@ func (r *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 	return &user, nil
 }
 
+func (r *UserRepository) GetUserByUsername(username string) (*models.User, error) {
+	query := `
+		SELECT id, username, first_name, last_name, email, password_hash, balance, created_at, last_login
+		FROM users
+		WHERE username = ?
+	`
+
+	var user models.User
+	var lastLogin sql.NullTime
+
+	err := r.db.QueryRow(query, username).Scan(
+		&user.ID,
+		&user.Username,
+		&user.FirstName,
+		&user.LastName,
+		&user.Email,
+		&user.PasswordHash,
+		&user.Balance,
+		&user.CreatedAt,
+		&lastLogin,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if lastLogin.Valid {
+		user.LastLogin = lastLogin.Time.UTC()
+	}
+
+	return &user, nil
+}
+
 // GetUserByID retrieves a user by their ID
 func (r *UserRepository) GetUserByID(id uuid.UUID) (*models.User, error) {
 	query := `

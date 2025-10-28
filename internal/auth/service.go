@@ -54,6 +54,10 @@ func (s *AuthService) Register(firstName, lastName, email, username, password st
 	if err == nil {
 		return nil, ErrEmailInUse
 	}
+	_, err = s.userRepo.GetUserByUsername(username)
+	if err == nil {
+		return nil, ErrUsernameExists
+	}
 
 	//Only proceed if the error was "user not found"
 	if !errors.Is(err, sql.ErrNoRows) {

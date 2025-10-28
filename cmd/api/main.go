@@ -47,7 +47,7 @@ func main() {
 	loadEnv()
 
 	// Set up databases
-	database := db.SetupTestDB()
+	database := database.SetupTestDB()
 
 	// Create repositories
 	tokenRepo := repository.NewRefreshTokenRepository(database)
