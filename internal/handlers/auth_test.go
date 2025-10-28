@@ -227,40 +227,40 @@ func TestLoginHandler(t *testing.T) {
 	}
 }
 
-func TestRefreshHandler(t * testing.T) {
+func TestRefreshHandler(t *testing.T) {
 	tests := []struct {
-		name string
-		setupCookie func(req *http.Request)
-		mockRefresh func(oldRefreshToken string) (*auth.TokenPair, error)
+		name           string
+		setupCookie    func(req *http.Request)
+		mockRefresh    func(oldRefreshToken string) (*auth.TokenPair, error)
 		expectedStatus int
 	}{
 		{
 			name: "successful token refresh",
-			setupCookie: func(req *http.Request){
+			setupCookie: func(req *http.Request) {
 				req.AddCookie(&http.Cookie{
-					Name: "refresh_token",
+					Name:  "refresh_token",
 					Value: "valid_refresh_token",
 				})
 			},
-			mockRefresh: func(oldRefreshToken string) (*auth.TokenPair, error){
+			mockRefresh: func(oldRefreshToken string) (*auth.TokenPair, error) {
 				return &auth.TokenPair{
-					AccessToken: "new_access_token",
+					AccessToken:  "new_access_token",
 					RefreshToken: "new_refresh_token",
 				}, nil
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name: "missing refresh token cookie",
-			setupCookie: func(req * http.Request) {},
-			mockRefresh: nil,
+			name:           "missing refresh token cookie",
+			setupCookie:    func(req *http.Request) {},
+			mockRefresh:    nil,
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "expired refresh token",
 			setupCookie: func(req *http.Request) {
 				req.AddCookie(&http.Cookie{
-					Name: "refresh_token",
+					Name:  "refresh_token",
 					Value: "expired_token",
 				})
 			},
@@ -273,7 +273,7 @@ func TestRefreshHandler(t * testing.T) {
 			name: "invalid refresh token",
 			setupCookie: func(req *http.Request) {
 				req.AddCookie(&http.Cookie{
-					Name: "refresh_token",
+					Name:  "refresh_token",
 					Value: "invalid_token",
 				})
 			},
@@ -286,7 +286,7 @@ func TestRefreshHandler(t * testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockService :=&MockAuthService{
+			mockService := &MockAuthService{
 				RefreshFunc: tt.mockRefresh,
 			}
 			handler := NewAuthHandler(mockService)
@@ -305,18 +305,18 @@ func TestRefreshHandler(t * testing.T) {
 }
 
 func TestLogoutHandler(t *testing.T) {
-	tests :=[]struct {
-		name string
-		setupCookie func(req *http.Request)
-		mockLogout func(tokenString string) error
+	tests := []struct {
+		name           string
+		setupCookie    func(req *http.Request)
+		mockLogout     func(tokenString string) error
 		expectedStatus int
-		checkCookie bool
+		checkCookie    bool
 	}{
 		{
 			name: "successful logout",
 			setupCookie: func(req *http.Request) {
 				req.AddCookie(&http.Cookie{
-					Name: "refresh_token",
+					Name:  "refresh_token",
 					Value: "valid_token",
 				})
 			},
@@ -324,26 +324,26 @@ func TestLogoutHandler(t *testing.T) {
 				return nil
 			},
 			expectedStatus: http.StatusOK,
-			checkCookie: true,
-		},{
-			name: "logout without cookie (already logged out)",
+			checkCookie:    true,
+		}, {
+			name:        "logout without cookie (already logged out)",
 			setupCookie: func(req *http.Request) {},
-			mockLogout: func(tokenString string) error{
+			mockLogout: func(tokenString string) error {
 				return nil
 			},
 			expectedStatus: http.StatusOK,
-			checkCookie: true,
+			checkCookie:    true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockService :=&MockAuthService {
+			mockService := &MockAuthService{
 				LogoutFunc: tt.mockLogout,
 			}
 			handler := NewAuthHandler(mockService)
 
-			req := httptest.NewRequest(http.MethodPost,"/auth/logout", nil)
+			req := httptest.NewRequest(http.MethodPost, "/auth/logout", nil)
 			tt.setupCookie(req)
 
 			rr := httptest.NewRecorder()
@@ -356,7 +356,7 @@ func TestLogoutHandler(t *testing.T) {
 			if tt.checkCookie {
 				cookies := rr.Result().Cookies()
 				found := false
-				for _, cookie := range cookies{
+				for _, cookie := range cookies {
 					if cookie.Name == "refresh_token" {
 						found = true
 						if cookie.MaxAge != -1 {

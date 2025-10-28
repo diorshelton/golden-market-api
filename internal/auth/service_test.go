@@ -30,50 +30,50 @@ func setupTestService(t *testing.T) (*AuthService, func()) {
 	return service, cleanup
 }
 
-func TestRegister(t * testing.T) {
+func TestRegister(t *testing.T) {
 	service, cleanup := setupTestService(t)
 	defer cleanup()
 
 	tests := []struct {
-		name string
+		name      string
 		firstName string
-		lastName string
-		email string
-		username string
-		password string
-		wantErr error
+		lastName  string
+		email     string
+		username  string
+		password  string
+		wantErr   error
 	}{
 		{
-			name: "successful registration",
+			name:      "successful registration",
 			firstName: "Jake",
-			lastName: "The Dog",
-			email: "jdog@example.com",
-			username: "jdog",
-			password: "password123",
-			wantErr:  nil,
+			lastName:  "The Dog",
+			email:     "jdog@example.com",
+			username:  "jdog",
+			password:  "password123",
+			wantErr:   nil,
 		},
 		{
-			name: "duplicate username",
+			name:      "duplicate username",
 			firstName: "Joshua",
-			lastName: "The Dog",
-			email: "jake@example.com",
-			username: "jdog",
-			password: "password",
-			wantErr:  ErrUsernameExists,
+			lastName:  "The Dog",
+			email:     "jake@example.com",
+			username:  "jdog",
+			password:  "password",
+			wantErr:   ErrUsernameExists,
 		},
 		{
-			name: "duplicate email",
+			name:      "duplicate email",
 			firstName: "Joshua",
-			lastName: "The Dog",
-			email: "jdog@example.com",
-			username: "jodogo",
-			password: "password123",
-			wantErr:  ErrEmailInUse,
+			lastName:  "The Dog",
+			email:     "jdog@example.com",
+			username:  "jodogo",
+			password:  "password123",
+			wantErr:   ErrEmailInUse,
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t * testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			user, err := service.Register(tt.firstName, tt.lastName, tt.email, tt.username, tt.password)
 
 			if tt.wantErr != nil {
@@ -89,9 +89,9 @@ func TestRegister(t * testing.T) {
 				t.Fatalf("Unexpected error: %v", err)
 			}
 
-			if user.Username != tt.username{
+			if user.Username != tt.username {
 				t.Errorf("Expected username %s, got %s", tt.username,
-				user.Username)
+					user.Username)
 			}
 			if user.Email != tt.email {
 				t.Errorf("Expected email %s, got %s", tt.email, user.Email)
@@ -124,16 +124,16 @@ func TestLogin(t *testing.T) {
 			wantErr:  nil,
 		},
 		{
-			name: "wrong password",
-			email: user.Email,
+			name:     "wrong password",
+			email:    user.Email,
 			password: "wrongpassword",
-			wantErr: ErrInvalidCredentials,
+			wantErr:  ErrInvalidCredentials,
 		},
 		{
-			name: "non-existent email",
-			email: "nonexistant@example.com",
+			name:     "non-existent email",
+			email:    "nonexistant@example.com",
 			password: "password",
-			wantErr: ErrInvalidCredentials,
+			wantErr:  ErrInvalidCredentials,
 		},
 	}
 
@@ -180,9 +180,9 @@ func TestRefresh(t *testing.T) {
 	_, refreshToken, _ := service.Login(user.Email, "password123")
 
 	tests := []struct {
-		name     string
-		token    string
-		wantErr  error
+		name    string
+		token   string
+		wantErr error
 	}{
 		{
 			name:    "successful refresh",
