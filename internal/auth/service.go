@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/diorshelton/golden-market/internal/models"
-	"github.com/diorshelton/golden-market/internal/repository"
+	"github.com/diorshelton/golden-market-api/internal/models"
+	"github.com/diorshelton/golden-market-api/internal/repository"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )

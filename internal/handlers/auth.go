@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/diorshelton/golden-market/internal/auth"
-	"github.com/diorshelton/golden-market/internal/models"
+	"github.com/diorshelton/golden-market-api/internal/auth"
+	"github.com/diorshelton/golden-market-api/internal/models"
 )
 
 type AuthServiceInterface interface {

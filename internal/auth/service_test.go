@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/diorshelton/golden-market/internal/database"
-	"github.com/diorshelton/golden-market/internal/repository"
+	"github.com/diorshelton/golden-market-api/internal/database"
+	"github.com/diorshelton/golden-market-api/internal/repository"
 )
 
 func setupTestService(t *testing.T) (*AuthService, func()) {

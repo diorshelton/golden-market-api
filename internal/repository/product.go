@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/diorshelton/golden-market/internal/models"
+	"github.com/diorshelton/golden-market-api/internal/models"
 )
 
 // ProductRepository handles database operations for products

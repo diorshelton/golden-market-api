@@ -1,4 +1,4 @@
-module github.com/diorshelton/golden-market
+module github.com/diorshelton/golden-market-api
 
 go 1.25.0
 

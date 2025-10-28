@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"time"
 
-	"github.com/diorshelton/golden-market/internal/models"
+	"github.com/diorshelton/golden-market-api/internal/models"
 	"github.com/google/uuid"
 )
 

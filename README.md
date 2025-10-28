@@ -30,12 +30,14 @@ Golden Market is a portfolio project demonstrating full-stack API development wi
 ### Installation
 
 1. Clone the repository
+
 ```bash
 git clone https://github.com/diorshelton/golden-market-api.git
 cd golden-market-api
 ```
 
 2. Install dependencies
+
 ```bash
 go mod download
 ```
@@ -43,6 +45,7 @@ go mod download
 3. Set up environment variables
 
 Create a `.env` file in the root directory:
+
 ```env
 JWT_SECRET=your-secret-key-here
 REFRESH_SECRET=your-refresh-secret-here
@@ -53,6 +56,7 @@ REFRESH_TOKEN_EXPIRY=7d
 ### Running the Application
 
 **Using Make (recommended):**
+
 ```bash
 # Run the server
 make run
@@ -68,6 +72,7 @@ make build
 ```
 
 **Without Make:**
+
 ```bash
 # Run the server
 go run ./cmd/api
@@ -107,17 +112,20 @@ The API uses JWT-based authentication with access and refresh tokens:
 ## 🗺 Roadmap
 
 ### ✅ Completed
+
 - [x] Project structure setup
 - [x] User authentication (register/login)
 - [x] JWT token management
 - [x] Basic user models
 
 ### 🚧 In Progress
+
 - [ ] Vendor system
 - [ ] Product catalog
 - [ ] Virtual coin economy
 
 ### 📅 Planned Features
+
 - [ ] Purchase transactions
 - [ ] User inventory management
 - [ ] Vendor dashboard
@@ -131,6 +139,7 @@ The API uses JWT-based authentication with access and refresh tokens:
 ## 🧪 Testing
 
 Run the test suite:
+
 ```bash
 make test
 
@@ -144,11 +153,12 @@ make test-coverage
 ## 📝 API Endpoints
 
 ### Authentication
+
 - `POST /auth/register` - Create new user account
 - `POST /auth/login` - Authenticate and receive tokens
 - `POST /auth/refresh` - Refresh access token
 
-*(More endpoints coming soon)*
+_(More endpoints coming soon)_
 
 ## 🤝 Contributing
 
@@ -161,8 +171,9 @@ This project is open source and available under the [MIT License](LICENSE).
 ## 👤 Author
 
 **Dior Shelton**
+
 - GitHub: [@diorshelton](https://github.com/diorshelton)
 
 ---
 
-*This project is actively being developed as part of my portfolio. Check back for updates!*
+_This project is actively being developed as part of my portfolio. Check back for updates!_

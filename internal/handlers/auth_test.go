@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/diorshelton/golden-market/internal/auth"
-	"github.com/diorshelton/golden-market/internal/models"
+	"github.com/diorshelton/golden-market-api/internal/auth"
+	"github.com/diorshelton/golden-market-api/internal/models"
 	"github.com/google/uuid"
 )
 
