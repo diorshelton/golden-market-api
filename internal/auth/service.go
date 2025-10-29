@@ -54,6 +54,8 @@ func (s *AuthService) Register(firstName, lastName, email, username, password st
 	if err == nil {
 		return nil, ErrEmailInUse
 	}
+
+	//Check if username already exists
 	_, err = s.userRepo.GetUserByUsername(username)
 	if err == nil {
 		return nil, ErrUsernameExists

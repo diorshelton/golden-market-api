@@ -48,6 +48,7 @@ func main() {
 
 	// Set up databases
 	database := database.SetupTestDB()
+	defer database.Close()
 
 	// Create repositories
 	tokenRepo := repository.NewRefreshTokenRepository(database)
