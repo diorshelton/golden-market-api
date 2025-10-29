@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/diorshelton/golden-market/internal/models"
+	"github.com/diorshelton/golden-market-api/internal/models"
 	"github.com/google/uuid"
 )
 
@@ -65,6 +65,39 @@ func (r *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 	var lastLogin sql.NullTime
 
 	err := r.db.QueryRow(query, email).Scan(
+		&user.ID,
+		&user.Username,
+		&user.FirstName,
+		&user.LastName,
+		&user.Email,
+		&user.PasswordHash,
+		&user.Balance,
+		&user.CreatedAt,
+		&lastLogin,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if lastLogin.Valid {
+		user.LastLogin = lastLogin.Time.UTC()
+	}
+
+	return &user, nil
+}
+
+func (r *UserRepository) GetUserByUsername(username string) (*models.User, error) {
+	query := `
+		SELECT id, username, first_name, last_name, email, password_hash, balance, created_at, last_login
+		FROM users
+		WHERE username = ?
+	`
+
+	var user models.User
+	var lastLogin sql.NullTime
+
+	err := r.db.QueryRow(query, username).Scan(
 		&user.ID,
 		&user.Username,
 		&user.FirstName,

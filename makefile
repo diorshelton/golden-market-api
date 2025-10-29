@@ -8,6 +8,7 @@ help:
 	@echo "  make fmt          - Format the code using gofmt"
 	@echo "  make vet          - Vet the code for potential issues"
 	@echo "  make test         - Run all tests"
+	@echo "  make check        - Run fmt vet and test"
 	@echo "  make test-verbose - Run tests with verbose output"
 	@echo "  make clean        - Remove build artifacts"
 	@echo "  make tidy         - Tidy and verify dependencies"
@@ -19,6 +20,7 @@ run:
 
 dev:
 	@echo "Starting development server with auto-reload..."
+# 		go run ./cmd/api
 	@which air > /dev/null || (echo "Air not installed. Run 'make install-deps' first" && exit 1)
 	air
 
@@ -42,6 +44,9 @@ test:
 	@echo "Running tests..."
 	go test ./...
 
+check: fmt vet test
+	@echo "All checks passed!"
+
 test-verbose:
 	@echo "Running tests (verbose)..."
 	go test -v ./...
@@ -64,3 +69,4 @@ install-deps:
 	@echo "Installing development dependencies..."
 	go install github.com/cosmtrek/air@latest
 	@echo "Done! You can now use 'make dev' for auto-reload"
+

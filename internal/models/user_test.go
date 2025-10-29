@@ -9,8 +9,8 @@ package models
 // 	"testing"
 // 	"time"
 
-// 	"github.com/diorshelton/golden-market/auth"
-// 	"github.com/diorshelton/golden-market/handlers"
+// 	"github.com/diorshelton/golden-market-api/auth"
+// 	"github.com/diorshelton/golden-market-api/handlers"
 // 	_ "github.com/mattn/go-sqlite3"
 // )
 

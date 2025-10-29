@@ -7,11 +7,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/diorshelton/golden-market/internal/auth"
-	"github.com/diorshelton/golden-market/internal/database"
-	"github.com/diorshelton/golden-market/internal/handlers"
-	"github.com/diorshelton/golden-market/internal/middleware"
-	"github.com/diorshelton/golden-market/internal/repository"
+	"github.com/diorshelton/golden-market-api/internal/auth"
+	"github.com/diorshelton/golden-market-api/internal/database"
+	"github.com/diorshelton/golden-market-api/internal/handlers"
+	"github.com/diorshelton/golden-market-api/internal/middleware"
+	"github.com/diorshelton/golden-market-api/internal/repository"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
@@ -47,12 +47,12 @@ func main() {
 	loadEnv()
 
 	// Set up databases
-	refreshTokenDb := db.SetupRefreshTokenDB()
-	userDb := db.SetupTestUserDB()
+	database := database.SetupTestDB()
+	defer database.Close()
 
 	// Create repositories
-	tokenRepo := repository.NewRefreshTokenRepository(refreshTokenDb)
-	userRepo := repository.NewUserRepository(userDb)
+	tokenRepo := repository.NewRefreshTokenRepository(database)
+	userRepo := repository.NewUserRepository(database)
 
 	// Parse token duration
 	accessTTL, err := time.ParseDuration(os.Getenv("ACCESS_TOKEN_EXPIRY"))
@@ -94,20 +94,24 @@ func main() {
 	}).Methods("GET")
 
 	// Public pages
-	r.HandleFunc("/api/v1/auth/login", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/api/v1/login", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "public/login.html")
 	}).Methods("GET")
 
-	r.HandleFunc("/api/v1/auth/register", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/api/v1/register", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "public/register.html")
 	}).Methods("GET")
 
-	// Auth API Endpoints
-	r.HandleFunc("/api/v1/auth/register", authHandler.Register).Methods("POST")
-	r.HandleFunc("/api/v1/auth/login", authHandler.LoginWithRefresh).Methods("POST")
-	r.HandleFunc("/api/v1/auth/refresh", authHandler.RefreshToken).Methods("POST")
+	// --- Auth API Endpoints (rate limited) ---
+	authRouter := r.PathPrefix("/api/v1/auth").Subrouter()
+	authRouter.Use(middleware.RateLimit)
 
-	// Protected routes
+	authRouter.HandleFunc("/register", authHandler.Register).Methods("POST")
+	authRouter.HandleFunc("/login", authHandler.Login).Methods("POST")
+	authRouter.HandleFunc("/refresh", authHandler.Refresh).Methods("POST")
+	authRouter.HandleFunc("/logout", authHandler.Logout).Methods("POST")
+
+	// --- Protected routes ---
 	protected := r.PathPrefix("/api/v1").Subrouter()
 	protected.Use(middleware.AuthMiddleware(authService))
 	protected.HandleFunc("/profile", userHandler.Profile).Methods("GET")

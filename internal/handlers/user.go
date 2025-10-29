@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/diorshelton/golden-market/internal/middleware"
-	"github.com/diorshelton/golden-market/internal/repository"
+	"github.com/diorshelton/golden-market-api/internal/middleware"
+	"github.com/diorshelton/golden-market-api/internal/repository"
 )
 
 // UserHandler contains HTTP handlers for user-related endpoints
