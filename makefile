@@ -24,11 +24,21 @@ dev:
 	@which air > /dev/null || (echo "Air not installed. Run 'make install-deps' first" && exit 1)
 	air
 
+# Generic build (works everywhere)
 build:
 	@echo "Building application..."
+	@mkdir -p bin
 	go build -o bin/api ./cmd/api
-	codesign -s - bin/api
 	@echo "Build complete: bin/api"
+
+# Local macOS build with signing
+build-mac: build
+	@echo "Code signing for macOS..."
+	codesign -s - bin/api
+
+# Production build (for CI/CD)
+build-prod: build
+	@echo "Production build complete"
 
 fmt:
 	@echo "Formatting code..."
