@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -89,8 +90,12 @@ func main() {
 
 	// Health check endpoint
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		io.WriteString(w, "OK")
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"status":"ok",
+			"port": os.Getenv("PORT"),
+			"environment": os.Getenv("ENVIRONMENT"),
+		})
 	}).Methods("GET")
 
 	// Public pages
@@ -121,7 +126,12 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
+
 	addr := ":" + port
 	log.Printf("Server starting on port %s", port)
-	log.Fatal(http.ListenAndServe(addr, r))
+	log.Printf("Environment: %s", os.Getenv("ENVIRONMENT"))
+
+	if err := http.ListenAndServe(addr, r); err != nil {
+		log.Fatal(err)
+	}
 }
