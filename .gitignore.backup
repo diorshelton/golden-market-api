@@ -41,9 +41,3 @@ mycmd
 tmp/
 *.log
 *.bak
-# Environment files (all variants)
-.env.local
-.env.production
-.env.development
-.env.*.local
-*.env
