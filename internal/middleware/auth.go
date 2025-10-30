@@ -17,8 +17,8 @@ const (
 	UserIDKey contextKey = "userID"
 )
 
-// AuthMiddleware checks JWT tokens and adds user info to the request context
-func AuthMiddleware(authService *auth.AuthService) func(http.Handler) http.Handler {
+// Auth checks JWT tokens and adds user info to the request context
+func Auth(authService *auth.AuthService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Extract token from Authorization header

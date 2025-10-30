@@ -123,7 +123,7 @@ func main() {
 	// --- Protected routes ---
 	protected := r.PathPrefix("/api/v1").Subrouter()
 	protected.Use(middleware.CORS) // Apply CORS to Subrouter
-	protected.Use(middleware.AuthMiddleware(authService))
+	protected.Use(middleware.Auth(authService))
 	protected.HandleFunc("/profile", userHandler.Profile).Methods("GET")
 
 	// Start server
