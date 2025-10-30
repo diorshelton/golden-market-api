@@ -13,4 +13,3 @@ require (
 	golang.org/x/time v0.14.0
 )
 
-require github.com/felixge/httpsnoop v1.0.3 // indirect
