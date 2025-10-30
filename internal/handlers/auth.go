@@ -95,6 +95,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Message:   "Registration successful",
 	}
 
+	log.Printf("Registering:%v", response)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(response)
