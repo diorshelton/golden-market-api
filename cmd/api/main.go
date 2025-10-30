@@ -83,6 +83,9 @@ func main() {
 	// Create router
 	r := mux.NewRouter()
 
+	//Apply CORS middleware
+	r.Use(middleware.CORS)
+
 	// Public Routes
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "Welcome to Golden Market!\n")
@@ -109,15 +112,17 @@ func main() {
 
 	// --- Auth API Endpoints (rate limited) ---
 	authRouter := r.PathPrefix("/api/v1/auth").Subrouter()
-	authRouter.Use(middleware.RateLimit)
+	authRouter.Use(middleware.CORS) // Apply CORS to Subrouter
+	authRouter.Use(middleware.RateLimit) // Apply ratelimiting
 
-	authRouter.HandleFunc("/register", authHandler.Register).Methods("POST")
-	authRouter.HandleFunc("/login", authHandler.Login).Methods("POST")
-	authRouter.HandleFunc("/refresh", authHandler.Refresh).Methods("POST")
-	authRouter.HandleFunc("/logout", authHandler.Logout).Methods("POST")
+	authRouter.HandleFunc("/register", authHandler.Register).Methods("POST", "OPTIONS")
+	authRouter.HandleFunc("/login", authHandler.Login).Methods("POST", "OPTIONS")
+	authRouter.HandleFunc("/refresh", authHandler.Refresh).Methods("POST", "OPTIONS")
+	authRouter.HandleFunc("/logout", authHandler.Logout).Methods("POST", "OPTIONS")
 
 	// --- Protected routes ---
 	protected := r.PathPrefix("/api/v1").Subrouter()
+	protected.Use(middleware.CORS) // Apply CORS to Subrouter
 	protected.Use(middleware.AuthMiddleware(authService))
 	protected.HandleFunc("/profile", userHandler.Profile).Methods("GET")
 
