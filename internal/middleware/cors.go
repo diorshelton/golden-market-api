@@ -1,8 +1,6 @@
 package middleware
 
-import (
-	// "github.com/gorilla/handlers"
-)
+// "github.com/gorilla/handlers"
 
 
 func CorsMiddleWare() {
