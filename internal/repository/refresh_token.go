@@ -35,7 +35,7 @@ func (r *RefreshTokenRepository) CreateRefreshToken(userID uuid.UUID, ttl time.D
 	token := &models.RefreshToken{
 		ID:        tokenID,
 		UserID:    userID,
-		Token:     tokenString, // secure random. token
+		Token:     tokenString, // secure random token
 		ExpiresAt: expiresAt,
 		CreatedAt: time.Now(),
 		Revoked:   false,

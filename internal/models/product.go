@@ -2,20 +2,21 @@ package models
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Product represents a product in the marketplace
 type Product struct {
-	ID          int       `json:"id"`
+	ID          uuid.UUID `json:"id"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
 	Price       Coins     `json:"price"`
 	Stock       int       `json:"stock"`
-	RestockRate int       `json:"restock_rate"`
-	MaxStock    int       `json:"max_stock"`
-	VendorID    int       `json:"vendor_id"`
-	LastRestock time.Time `json:"last_restock"`
+	ImageURL    string    `json:"image_url,omitempty"`
+	Category    string    `json:"category"`
 	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 // Item represents a product in a user's inventory
