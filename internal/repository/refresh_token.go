@@ -119,14 +119,14 @@ func (r *RefreshTokenRepository) DeleteExpiredTokens() error {
 	return err
 }
 
-// // RevokeAllUserTokens revokes all refresh tokens for a specific user
-// func (r *RefreshTokenRepository) RevokeAllUserTokens(userID uuid.UUID) error {
-// 	query := `
-// 		UPDATE refresh_tokens
-// 		SET revoked = true
-// 		WHERE user_id = ? AND revoked = false
-// 	`
+// RevokeAllUserTokens revokes all refresh tokens for a specific user
+func (r *RefreshTokenRepository) RevokeAllUserTokens(userID uuid.UUID) error {
+	query := `
+		UPDATE refresh_tokens
+		SET revoked = true
+		WHERE user_id = ? AND revoked = false
+	`
 
-// 	_, err := r.db.Exec(query, userID)
-// 	return err
-// }
+	_, err := r.db.Exec(query, userID)
+	return err
+}
