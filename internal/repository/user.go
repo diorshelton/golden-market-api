@@ -154,16 +154,16 @@ func (r *UserRepository) GetUserByID(id uuid.UUID) (*models.User, error) {
 	return &user, nil
 }
 
-// // UpdateBalance updates a user's coin balance
-// func (r *UserRepository) UpdateBalance(userID uuid.UUID, newBalance models.Coins) error {
-// 	query := `UPDATE users SET balance = ? WHERE id = ?`
-// 	_, err := r.db.Exec(query, newBalance, userID)
-// 	return err
-// }
+// UpdateBalance updates a user's coin balance
+func (r *UserRepository) UpdateBalance(userID uuid.UUID, newBalance models.Coins) error {
+	query := `UPDATE users SET balance = ? WHERE id = ?`
+	_, err := r.db.Exec(query, newBalance, userID)
+	return err
+}
 
-// // UpdateLastLogin updates the user's last login timestamp
-// func (r *UserRepository) UpdateLastLogin(userID uuid.UUID) error {
-// 	query := `UPDATE users SET last_login = ? WHERE id = ?`
-// 	_, err := r.db.Exec(query, time.Now().UTC(), userID)
-// 	return err
-// }
+// UpdateLastLogin updates the user's last login timestamp
+func (r *UserRepository) UpdateLastLogin(userID uuid.UUID) error {
+	query := `UPDATE users SET last_login = ? WHERE id = ?`
+	_, err := r.db.Exec(query, time.Now().UTC(), userID)
+	return err
+}
