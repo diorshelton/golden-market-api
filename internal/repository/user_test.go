@@ -36,10 +36,6 @@ func TestSpunUpDB(t *testing.T) {
 		t.Errorf("This error occurred :%v", err)
 	}
 
-	if err == nil {
-		fmt.Printf("User:%+v", jake)
-	}
-
 	if jake.Username == "" {
 		t.Errorf("No Username")
 	}
@@ -56,7 +52,7 @@ func TestSpunUpDB(t *testing.T) {
 			t.Errorf("An error occurred %v", err)
 		}
 
-		fmt.Printf("Returned %v users\n", len(users))
+		fmt.Printf("Returned %v user(s)\n", len(users))
 
 		if len(users) < 1 {
 			t.Errorf("No users")

@@ -1,21 +1,22 @@
 package repository
 
 import (
+	"context"
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
 	"time"
 
 	"github.com/diorshelton/golden-market-api/internal/models"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 // RefreshTokenRepository handles database operations for refresh tokens
 type RefreshTokenRepository struct {
-	db *sql.DB
+	db *pgx.Conn
 }
 
-func NewRefreshTokenRepository(db *sql.DB) *RefreshTokenRepository {
+func NewRefreshTokenRepository(db *pgx.Conn) *RefreshTokenRepository {
 	return &RefreshTokenRepository{db: db}
 }
 
@@ -45,8 +46,10 @@ func (r *RefreshTokenRepository) CreateRefreshToken(userID uuid.UUID, ttl time.D
 		INSERT INTO refresh_tokens (id, user_id, token, expires_at, created_at, revoked) 
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
+	ctx := context.Background()
+
 	_, err := r.db.Exec(
-		query,
+		ctx, query,
 		token.ID,
 		token.UserID,
 		token.Token,
@@ -70,7 +73,10 @@ func (r *RefreshTokenRepository) GetRefreshToken(tokenString string) (*models.Re
 	`
 
 	var token models.RefreshToken
-	err := r.db.QueryRow(query, tokenString).Scan(
+
+	ctx := context.Background()
+
+	err := r.db.QueryRow(ctx, query, tokenString).Scan(
 		&token.ID,
 		&token.UserID,
 		&token.Token,
@@ -92,7 +98,9 @@ func (r *RefreshTokenRepository) DeleteRefreshToken(tokenString string) error {
 		WHERE token = ?
 	`
 
-	_, err := r.db.Exec(query, tokenString)
+	ctx := context.Background()
+
+	_, err := r.db.Exec(ctx, query, tokenString)
 	return err
 }
 
@@ -104,7 +112,9 @@ func (r *RefreshTokenRepository) RevokeRefreshToken(tokenString string) error {
 		WHERE token = ?
 	`
 
-	_, err := r.db.Exec(query, tokenString)
+	ctx := context.Background()
+
+	_, err := r.db.Exec(ctx, query, tokenString)
 	return err
 }
 
@@ -115,7 +125,9 @@ func (r *RefreshTokenRepository) DeleteExpiredTokens() error {
 		WHERE expires_at < ?
 	`
 
-	_, err := r.db.Exec(query, time.Now())
+	ctx := context.Background()
+
+	_, err := r.db.Exec(ctx, query, time.Now())
 	return err
 }
 
@@ -127,6 +139,8 @@ func (r *RefreshTokenRepository) RevokeAllUserTokens(userID uuid.UUID) error {
 		WHERE user_id = ? AND revoked = false
 	`
 
-	_, err := r.db.Exec(query, userID)
+	ctx := context.Background()
+
+	_, err := r.db.Exec(ctx, query, userID)
 	return err
 }

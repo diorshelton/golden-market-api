@@ -13,7 +13,7 @@ import (
 
 // UserRepository handles database operations for users
 type UserRepository struct {
-	db  *pgx.Conn
+	db *pgx.Conn
 }
 
 // NewUserRepository creates a new user repository
@@ -105,9 +105,9 @@ func (r *UserRepository) GetUserByUsername(username string) (*models.User, error
 	var user models.User
 	var lastLogin sql.NullTime
 
-		ctx := context.Background()
+	ctx := context.Background()
 
-	err := r.db.QueryRow(ctx,query, username).Scan(
+	err := r.db.QueryRow(ctx, query, username).Scan(
 		&user.ID,
 		&user.Username,
 		&user.FirstName,
@@ -141,10 +141,9 @@ func (r *UserRepository) GetUserByID(id uuid.UUID) (*models.User, error) {
 	var user models.User
 	var lastLogin sql.NullTime
 
-
 	ctx := context.Background()
 
-	err := r.db.QueryRow(ctx,query, id).Scan(
+	err := r.db.QueryRow(ctx, query, id).Scan(
 		&user.ID,
 		&user.Username,
 		&user.FirstName,
@@ -181,7 +180,7 @@ func (r *UserRepository) UpdateBalance(userID uuid.UUID, newBalance models.Coins
 func (r *UserRepository) UpdateLastLogin(userID uuid.UUID) error {
 	query := `UPDATE users SET last_login = ? WHERE id = ?`
 
-		ctx := context.Background()
+	ctx := context.Background()
 
 	_, err := r.db.Exec(ctx, query, time.Now().UTC(), userID)
 	return err
@@ -191,7 +190,6 @@ func (r *UserRepository) GetAllUsers() ([]*models.User, error) {
 	query := `SELECT * FROM users`
 
 	ctx := context.Background()
-
 
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
@@ -210,7 +208,6 @@ func (r *UserRepository) GetAllUsers() ([]*models.User, error) {
 			&u.Email,
 			&u.PasswordHash,
 			&u.Balance,
-			&u.Inventory,
 			&u.CreatedAt,
 			&u.LastLogin,
 		)
