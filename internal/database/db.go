@@ -1,12 +1,30 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/jackc/pgx/v5"
 )
+
+func Connect() (*pgx.Conn, error) {
+	connString := os.Getenv("DATABASE_URL")
+	if connString == "" {
+		return nil, fmt.Errorf("DATABASE_URL not set")
+	}
+
+	conn, err := pgx.Connect(context.Background(), connString)
+	if err != nil {
+		return nil, fmt.Errorf("could not connect:%w", err)
+	}
+	defer conn.Close(context.Background())
+
+	fmt.Println("Connected to PostgresSQL")
+	return conn, nil
+}
 
 // SetupTestUserDB creates a temporary in memory test user database  with both users and refresh_tokens tables
 func SetupTestDB() *sql.DB {
@@ -61,37 +79,40 @@ func SetupTestDB() *sql.DB {
 }
 
 // SetupTestUserDB creates a temporary in-memory database with just the users table
-// Use this only if you need to test users in isolation
-func SetupTestUserDB() *sql.DB {
-	db, err := sql.Open("sqlite3", ":memory:")
+// Use this only to test users in isolation
+func SetupTestUserDB() (*pgx.Conn, error) {
+	connString := os.Getenv("TEST_DATABASE_URL")
+	if connString == " " {
+		return nil, fmt.Errorf("TEST_DATABASE_URL not set")
+	}
+
+	ctx := context.Background()
+
+	db, err := pgx.Connect(ctx, connString)
 	if err != nil {
 		log.Fatalf("Failed to open test database: %v", err)
 	}
 
-	_, err = db.Exec("PRAGMA foreign_keys = ON")
-	if err != nil {
-		log.Fatalf("Failed to enable foreign keys: %v", err)
-	}
-
 	query := `
-		CREATE TABLE IF NOT EXISTS users (
-			id TEXT PRIMARY KEY,
-			username TEXT NOT NULL UNIQUE,
-			first_name TEXT NOT NULL,
-			last_name TEXT NOT NULL,
-			email TEXT NOT NULL UNIQUE,
-			password_hash TEXT NOT NULL,
+		CREATE TEMPORARY TABLE users (
+			id UUID PRIMARY KEY,
+			username VARCHAR(50) NOT NULL UNIQUE,
+			first_name VARCHAR(255) NOT NULL,
+			last_name VARCHAR(255) NOT NULL,
+			email VARCHAR(255) NOT NULL UNIQUE,
+			password_hash VARCHAR(255) NOT NULL,
 			balance INTEGER NOT NULL DEFAULT 0,
-			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			last_login DATETIME
+			INVENTORY JSONB[],
+			created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			last_login TIMESTAMP WITH TIME ZONE
 		)
 	`
-	_, err = db.Exec(query)
+	_, err = db.Exec(ctx, query)
 	if err != nil {
 		log.Fatalf("Failed to create users table: %v", err)
 	}
 
-	return db
+	return db, nil
 }
 
 // SetupTestRefreshTokenDB creates an in-memory database with both tables
@@ -108,19 +129,4 @@ func CleanupTestDB(db *sql.DB) {
 			fmt.Printf("Warning: Failed to close test database: %v\n", err)
 		}
 	}
-}
-
-// TruncateTables removes all data from tables (useful between tests)
-func TruncateTables(db *sql.DB) error {
-	// Delete in order (child tables first to respect foreign keys)
-	tables := []string{"refresh_tokens", "users"}
-
-	for _, table := range tables {
-		_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", table))
-		if err != nil {
-			return fmt.Errorf("failed to truncate %s: %w", table, err)
-		}
-	}
-
-	return nil
 }
