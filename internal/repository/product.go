@@ -21,7 +21,8 @@ func NewProductRepository(db *sql.DB) *ProductRepository {
 func (r *ProductRepository) Create(product *models.Product) error {
 	query := `
 		INSERT INTO products (name, description, price, stock, restock_rate, max_stock, vendor_id, last_restock, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+
 	`
 	result, err := r.db.Exec(
 		query,
@@ -52,7 +53,7 @@ func (r *ProductRepository) GetByID(id int) (*models.Product, error) {
 	query := `
 		SELECT id, name, description, price, stock, restock_rate, max_stock, vendor_id, last_restock, created_at
 		FROM products
-		WHERE id = ?
+		WHERE id = $1
 	`
 
 	var product models.Product
@@ -80,7 +81,7 @@ func (r *ProductRepository) GetByVendorID(vendorID int) ([]*models.Product, erro
 	query := `
 		SELECT id, name, description, price, stock, restock_rate, max_stock, vendor_id, last_restock, created_at
 		FROM products
-		WHERE vendor_id = ?
+		WHERE vendor_id = $1
 	`
 
 	rows, err := r.db.Query(query, vendorID)
@@ -152,21 +153,21 @@ func (r *ProductRepository) GetAll() ([]*models.Product, error) {
 
 // UpdateStock updates the stock level for a product
 func (r *ProductRepository) UpdateStock(productID, newStock int) error {
-	query := `UPDATE products SET stock = ? WHERE id = ?`
+	query := `UPDATE products SET stock = $1 WHERE id = $2`
 	_, err := r.db.Exec(query, newStock, productID)
 	return err
 }
 
 // UpdateLastRestock updates the last restock timestamp
 func (r *ProductRepository) UpdateLastRestock(productID int, lastRestock time.Time) error {
-	query := `UPDATE products SET last_restock = ? WHERE id = ?`
+	query := `UPDATE products SET last_restock = $1 WHERE id = $2`
 	_, err := r.db.Exec(query, lastRestock, productID)
 	return err
 }
 
 // Delete removes a product from the database
 func (r *ProductRepository) Delete(productID int) error {
-	query := `DELETE FROM products WHERE id = ?`
+	query := `DELETE FROM products WHERE id = $1`
 	_, err := r.db.Exec(query, productID)
 	return err
 }

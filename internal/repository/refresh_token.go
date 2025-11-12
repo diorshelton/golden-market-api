@@ -44,7 +44,7 @@ func (r *RefreshTokenRepository) CreateRefreshToken(userID uuid.UUID, ttl time.D
 
 	query := `
 		INSERT INTO refresh_tokens (id, user_id, token, expires_at, created_at, revoked) 
-		VALUES (?, ?, ?, ?, ?, ?)
+		VALUES ($1, $2, $3, $4, $5, $6)
 	`
 	ctx := context.Background()
 
@@ -69,7 +69,7 @@ func (r *RefreshTokenRepository) GetRefreshToken(tokenString string) (*models.Re
 	query := `
 		SELECT id, user_id, token, expires_at, created_at, revoked
 		FROM refresh_tokens
-		WHERE token = ?
+		WHERE token = $1
 	`
 
 	var token models.RefreshToken
@@ -95,7 +95,7 @@ func (r *RefreshTokenRepository) GetRefreshToken(tokenString string) (*models.Re
 func (r *RefreshTokenRepository) DeleteRefreshToken(tokenString string) error {
 	query := `
 		DELETE FROM refresh_tokens
-		WHERE token = ?
+		WHERE token = $1
 	`
 
 	ctx := context.Background()
@@ -109,7 +109,7 @@ func (r *RefreshTokenRepository) RevokeRefreshToken(tokenString string) error {
 	query := `
 		UPDATE refresh_tokens
 		SET revoked = true
-		WHERE token = ?
+		WHERE token = $1
 	`
 
 	ctx := context.Background()
@@ -122,7 +122,7 @@ func (r *RefreshTokenRepository) RevokeRefreshToken(tokenString string) error {
 func (r *RefreshTokenRepository) DeleteExpiredTokens() error {
 	query := `
 		DELETE FROM refresh_tokens
-		WHERE expires_at < ?
+		WHERE expires_at < $1
 	`
 
 	ctx := context.Background()
@@ -136,7 +136,7 @@ func (r *RefreshTokenRepository) RevokeAllUserTokens(userID uuid.UUID) error {
 	query := `
 		UPDATE refresh_tokens
 		SET revoked = true
-		WHERE user_id = ? AND revoked = false
+		WHERE user_id = $1 AND revoked = false
 	`
 
 	ctx := context.Background()

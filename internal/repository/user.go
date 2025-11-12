@@ -99,7 +99,7 @@ func (r *UserRepository) GetUserByUsername(username string) (*models.User, error
 	query := `
 		SELECT id, username, first_name, last_name, email, password_hash, balance, created_at, last_login
 		FROM users
-		WHERE username = ?
+		WHERE username = $1
 	`
 
 	var user models.User
@@ -135,7 +135,7 @@ func (r *UserRepository) GetUserByID(id uuid.UUID) (*models.User, error) {
 	query := `
 		SELECT id, username, first_name, last_name, email, password_hash, balance, created_at, last_login
 		FROM users
-		WHERE id = ?
+		WHERE id = $1
 	`
 
 	var user models.User
@@ -168,7 +168,7 @@ func (r *UserRepository) GetUserByID(id uuid.UUID) (*models.User, error) {
 
 // UpdateBalance updates a user's coin balance
 func (r *UserRepository) UpdateBalance(userID uuid.UUID, newBalance models.Coins) error {
-	query := `UPDATE users SET balance = ? WHERE id = ?`
+	query := `UPDATE users SET balance = $1 WHERE id = $2`
 
 	ctx := context.Background()
 
@@ -178,7 +178,7 @@ func (r *UserRepository) UpdateBalance(userID uuid.UUID, newBalance models.Coins
 
 // UpdateLastLogin updates the user's last login timestamp
 func (r *UserRepository) UpdateLastLogin(userID uuid.UUID) error {
-	query := `UPDATE users SET last_login = ? WHERE id = ?`
+	query := `UPDATE users SET last_login = $1 WHERE id = $2`
 
 	ctx := context.Background()
 
