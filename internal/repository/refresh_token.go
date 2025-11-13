@@ -1,21 +1,22 @@
 package repository
 
 import (
+	"context"
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
 	"time"
 
 	"github.com/diorshelton/golden-market-api/internal/models"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 // RefreshTokenRepository handles database operations for refresh tokens
 type RefreshTokenRepository struct {
-	db *sql.DB
+	db *pgx.Conn
 }
 
-func NewRefreshTokenRepository(db *sql.DB) *RefreshTokenRepository {
+func NewRefreshTokenRepository(db *pgx.Conn) *RefreshTokenRepository {
 	return &RefreshTokenRepository{db: db}
 }
 
@@ -43,10 +44,12 @@ func (r *RefreshTokenRepository) CreateRefreshToken(userID uuid.UUID, ttl time.D
 
 	query := `
 		INSERT INTO refresh_tokens (id, user_id, token, expires_at, created_at, revoked) 
-		VALUES (?, ?, ?, ?, ?, ?)
+		VALUES ($1, $2, $3, $4, $5, $6)
 	`
+	ctx := context.Background()
+
 	_, err := r.db.Exec(
-		query,
+		ctx, query,
 		token.ID,
 		token.UserID,
 		token.Token,
@@ -66,11 +69,14 @@ func (r *RefreshTokenRepository) GetRefreshToken(tokenString string) (*models.Re
 	query := `
 		SELECT id, user_id, token, expires_at, created_at, revoked
 		FROM refresh_tokens
-		WHERE token = ?
+		WHERE token = $1
 	`
 
 	var token models.RefreshToken
-	err := r.db.QueryRow(query, tokenString).Scan(
+
+	ctx := context.Background()
+
+	err := r.db.QueryRow(ctx, query, tokenString).Scan(
 		&token.ID,
 		&token.UserID,
 		&token.Token,
@@ -89,10 +95,12 @@ func (r *RefreshTokenRepository) GetRefreshToken(tokenString string) (*models.Re
 func (r *RefreshTokenRepository) DeleteRefreshToken(tokenString string) error {
 	query := `
 		DELETE FROM refresh_tokens
-		WHERE token = ?
+		WHERE token = $1
 	`
 
-	_, err := r.db.Exec(query, tokenString)
+	ctx := context.Background()
+
+	_, err := r.db.Exec(ctx, query, tokenString)
 	return err
 }
 
@@ -101,10 +109,12 @@ func (r *RefreshTokenRepository) RevokeRefreshToken(tokenString string) error {
 	query := `
 		UPDATE refresh_tokens
 		SET revoked = true
-		WHERE token = ?
+		WHERE token = $1
 	`
 
-	_, err := r.db.Exec(query, tokenString)
+	ctx := context.Background()
+
+	_, err := r.db.Exec(ctx, query, tokenString)
 	return err
 }
 
@@ -112,10 +122,12 @@ func (r *RefreshTokenRepository) RevokeRefreshToken(tokenString string) error {
 func (r *RefreshTokenRepository) DeleteExpiredTokens() error {
 	query := `
 		DELETE FROM refresh_tokens
-		WHERE expires_at < ?
+		WHERE expires_at < $1
 	`
 
-	_, err := r.db.Exec(query, time.Now())
+	ctx := context.Background()
+
+	_, err := r.db.Exec(ctx, query, time.Now())
 	return err
 }
 
@@ -124,9 +136,11 @@ func (r *RefreshTokenRepository) RevokeAllUserTokens(userID uuid.UUID) error {
 	query := `
 		UPDATE refresh_tokens
 		SET revoked = true
-		WHERE user_id = ? AND revoked = false
+		WHERE user_id = $1 AND revoked = false
 	`
 
-	_, err := r.db.Exec(query, userID)
+	ctx := context.Background()
+
+	_, err := r.db.Exec(ctx, query, userID)
 	return err
 }

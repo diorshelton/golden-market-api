@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"log"
@@ -48,8 +49,13 @@ func main() {
 	loadEnv()
 
 	// Set up databases
-	database := database.SetupTestDB()
-	defer database.Close()
+	database, err := database.SetupTestDB()
+	if err != nil {
+		log.Fatalf("Failed to set up test databases: %v", err)
+	}
+
+	ctx := context.Background()
+	defer database.Close(ctx)
 
 	// Create repositories
 	tokenRepo := repository.NewRefreshTokenRepository(database)
@@ -95,8 +101,8 @@ func main() {
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
-			"status":"ok",
-			"port": os.Getenv("PORT"),
+			"status":      "ok",
+			"port":        os.Getenv("PORT"),
 			"environment": os.Getenv("ENVIRONMENT"),
 		})
 	}).Methods("GET")
@@ -112,7 +118,7 @@ func main() {
 
 	// --- Auth API Endpoints (rate limited) ---
 	authRouter := r.PathPrefix("/api/v1/auth").Subrouter()
-	authRouter.Use(middleware.CORS) // Apply CORS to Subrouter
+	authRouter.Use(middleware.CORS)      // Apply CORS to Subrouter
 	authRouter.Use(middleware.RateLimit) // Apply ratelimiting
 
 	authRouter.HandleFunc("/register", authHandler.Register).Methods("POST", "OPTIONS")
