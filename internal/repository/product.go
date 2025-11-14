@@ -1,55 +1,57 @@
 package repository
 
 import (
-	"database/sql"
+	"context"
+	"fmt"
 	"time"
 
 	"github.com/diorshelton/golden-market-api/internal/models"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 // ProductRepository handles database operations for products
 type ProductRepository struct {
-	db *sql.DB
+	db *pgx.Conn
 }
 
 // NewProductRepository creates a new product repository
-func NewProductRepository(db *sql.DB) *ProductRepository {
+func NewProductRepository(db *pgx.Conn) *ProductRepository {
 	return &ProductRepository{db: db}
 }
 
 // Create adds a new product to the database
-func (r *ProductRepository) Create(product *models.Product) error {
+func (r *ProductRepository) Create(ctx context.Context, product *models.Product) (models.Product, error) {
 	query := `
-		INSERT INTO products (name, description, price, stock, restock_rate, max_stock, vendor_id, last_restock, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO products (id, name, description, price, stock, last_restock, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 
 	`
 	result, err := r.db.Exec(
+		ctx,
 		query,
+		product.ID,
 		product.Name,
 		product.Description,
 		product.Price,
 		product.Stock,
-		product.RestockRate,
-		product.MaxStock,
-		product.VendorID,
-		product.LastRestock,
+		time.Now().UTC(),
 		time.Now().UTC(),
 	)
+
 	if err != nil {
-		return err
+		return *product,  fmt.Errorf("failed to insert product:%v", err)
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return err
+	if result.RowsAffected() != 1 {
+		return *product, fmt.Errorf("there were no rows affected: %v", err)
 	}
-	product.ID = int(id)
-	return nil
+
+	return *product, nil
 }
 
 // GetByID retrieves a product by its ID
-func (r *ProductRepository) GetByID(id int) (*models.Product, error) {
+func (r *ProductRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Product, error) {
 	query := `
 		SELECT id, name, description, price, stock, restock_rate, max_stock, vendor_id, last_restock, created_at
 		FROM products
@@ -57,15 +59,12 @@ func (r *ProductRepository) GetByID(id int) (*models.Product, error) {
 	`
 
 	var product models.Product
-	err := r.db.QueryRow(query, id).Scan(
+	err := r.db.QueryRow(ctx, query, id).Scan(
 		&product.ID,
 		&product.Name,
 		&product.Description,
 		&product.Price,
 		&product.Stock,
-		&product.RestockRate,
-		&product.MaxStock,
-		&product.VendorID,
 		&product.LastRestock,
 		&product.CreatedAt,
 	)
@@ -76,52 +75,14 @@ func (r *ProductRepository) GetByID(id int) (*models.Product, error) {
 	return &product, nil
 }
 
-// GetByVendorID retrieves all products for a specific vendor
-func (r *ProductRepository) GetByVendorID(vendorID int) ([]*models.Product, error) {
-	query := `
-		SELECT id, name, description, price, stock, restock_rate, max_stock, vendor_id, last_restock, created_at
-		FROM products
-		WHERE vendor_id = $1
-	`
-
-	rows, err := r.db.Query(query, vendorID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var products []*models.Product
-	for rows.Next() {
-		var product models.Product
-		err := rows.Scan(
-			&product.ID,
-			&product.Name,
-			&product.Description,
-			&product.Price,
-			&product.Stock,
-			&product.RestockRate,
-			&product.MaxStock,
-			&product.VendorID,
-			&product.LastRestock,
-			&product.CreatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-		products = append(products, &product)
-	}
-
-	return products, rows.Err()
-}
-
 // GetAll retrieves all products
-func (r *ProductRepository) GetAll() ([]*models.Product, error) {
+func (r *ProductRepository) GetAll(ctx context.Context) ([]*models.Product, error) {
 	query := `
 		SELECT id, name, description, price, stock, restock_rate, max_stock, vendor_id, last_restock, created_at
 		FROM products
 	`
 
-	rows, err := r.db.Query(query)
+	rows, err := r.db.Query(ctx,query)
 	if err != nil {
 		return nil, err
 	}
@@ -136,9 +97,6 @@ func (r *ProductRepository) GetAll() ([]*models.Product, error) {
 			&product.Description,
 			&product.Price,
 			&product.Stock,
-			&product.RestockRate,
-			&product.MaxStock,
-			&product.VendorID,
 			&product.LastRestock,
 			&product.CreatedAt,
 		)
@@ -152,22 +110,22 @@ func (r *ProductRepository) GetAll() ([]*models.Product, error) {
 }
 
 // UpdateStock updates the stock level for a product
-func (r *ProductRepository) UpdateStock(productID, newStock int) error {
+func (r *ProductRepository) UpdateStock(ctx context.Context, productID, newStock int) error {
 	query := `UPDATE products SET stock = $1 WHERE id = $2`
-	_, err := r.db.Exec(query, newStock, productID)
+	_, err := r.db.Exec(ctx, query, newStock, productID)
 	return err
 }
 
 // UpdateLastRestock updates the last restock timestamp
-func (r *ProductRepository) UpdateLastRestock(productID int, lastRestock time.Time) error {
+func (r *ProductRepository) UpdateLastRestock(ctx context.Context, productID int, lastRestock time.Time) error {
 	query := `UPDATE products SET last_restock = $1 WHERE id = $2`
-	_, err := r.db.Exec(query, lastRestock, productID)
+	_, err := r.db.Exec(ctx,query, lastRestock, productID)
 	return err
 }
 
 // Delete removes a product from the database
-func (r *ProductRepository) Delete(productID int) error {
+func (r *ProductRepository) Delete(ctx context.Context, productID int) error {
 	query := `DELETE FROM products WHERE id = $1`
-	_, err := r.db.Exec(query, productID)
+	_, err := r.db.Exec(ctx, query, productID)
 	return err
 }

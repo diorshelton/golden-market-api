@@ -7,18 +7,30 @@ import (
 	"os"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/joho/godotenv"
 )
 
 // SetupTestUserDB creates a temporary in memory test user database  with both users and refresh_tokens tables
-func SetupTestDB() (*pgx.Conn, error) {
-	connString := os.Getenv("TEST_DATABASE_URL")
-	if connString == "" {
-		return nil, fmt.Errorf("TEST_DATABASE_URL not set in env")
+func loadEnv(envString string) string {
+	// Load .env file if it exists
+	err := godotenv.Load("../../.env")
+	if err != nil {
+		log.Fatalf("An error occurred while loading .env: %v", err)
 	}
+
+	dbString := os.Getenv(envString)
+	if dbString == "" {
+		log.Fatalf("TEST_DB_URL not set in env")
+	}
+	return dbString
+}
+
+func SetupTestDB() (*pgx.Conn, error) {
+	dbString := loadEnv("TEST_DB_URL")
 
 	ctx := context.Background()
 
-	db, err := pgx.Connect(ctx, connString)
+	db, err := pgx.Connect(ctx, dbString)
 	if err != nil {
 		log.Fatalf("Failed to open test database: %v", err)
 	}
@@ -56,7 +68,7 @@ func SetupTestDB() (*pgx.Conn, error) {
 
 	productsQuery := `
 	CREATE TEMPORARY TABLE products(
-	  id SERIAL PRIMARY KEY,
+	  id UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
     price INTEGER NOT NULL,
@@ -73,7 +85,7 @@ func SetupTestDB() (*pgx.Conn, error) {
 	inventoryQuery := `
 	CREATE TEMPORARY TABLE inventory (
 		user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-		product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+		product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
 		quantity INTEGER NOT NULL DEFAULT 0,
 		PRIMARY KEY (user_id, product_id),
 		CONSTRAINT quantity_positive CHECK (quantity > 0)

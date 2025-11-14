@@ -12,6 +12,7 @@ func TestSpunUpDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to SetupTestUserDB %v", err)
 	}
+	defer database.CleanupTestDB(dbConnection)
 
 	type Test struct {
 		firstName    string
@@ -58,21 +59,4 @@ func TestSpunUpDB(t *testing.T) {
 			t.Errorf("No users")
 		}
 	})
-}
-
-func TestCreateUser(t *testing.T) {
-	// userDatabase := setUpTestPGX(t)
-
-	// _, err := userDatabase.CreateUser(jake.username, jake.firstName, jake.lastName, jake.email, jake.passwordHash)
-	// if err != nil {
-	// 	t.Errorf("Failed to create user %v", err)
-	// }
-
-	// if user.FirstName != "jake" {
-	// 	t.Error("expected ")
-	// }
-
-	// t.Run("fetch user", func(t *testing.T) {
-	// 	userDatabase.GetUserByEmail(jake.email)
-	// })
 }
