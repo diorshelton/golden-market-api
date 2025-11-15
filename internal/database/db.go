@@ -69,7 +69,7 @@ func SetupTestDB() (*pgx.Conn, error) {
 	productsQuery := `
 	CREATE TEMPORARY TABLE products(
 	  id UUID PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL CHECK (name <>''),
     description TEXT,
     price INTEGER NOT NULL,
     stock INTEGER NOT NULL DEFAULT 0,
