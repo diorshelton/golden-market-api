@@ -40,7 +40,7 @@ func (r *ProductRepository) Create(ctx context.Context, product *models.Product)
 	)
 
 	if err != nil {
-		return *product,  fmt.Errorf("failed to insert product:%v", err)
+		return *product, fmt.Errorf("failed to insert product:%v", err)
 	}
 
 	if result.RowsAffected() != 1 {
@@ -82,7 +82,7 @@ func (r *ProductRepository) GetAll(ctx context.Context) ([]*models.Product, erro
 		FROM products
 	`
 
-	rows, err := r.db.Query(ctx,query)
+	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ func (r *ProductRepository) UpdateStock(ctx context.Context, productID, newStock
 // UpdateLastRestock updates the last restock timestamp
 func (r *ProductRepository) UpdateLastRestock(ctx context.Context, productID int, lastRestock time.Time) error {
 	query := `UPDATE products SET last_restock = $1 WHERE id = $2`
-	_, err := r.db.Exec(ctx,query, lastRestock, productID)
+	_, err := r.db.Exec(ctx, query, lastRestock, productID)
 	return err
 }
 

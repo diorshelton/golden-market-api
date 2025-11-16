@@ -25,10 +25,10 @@ func TestProductRepository(t *testing.T) {
 
 	products := []ProductData{
 		{Name: "Mechanical Keyboard", Description: "RGB backlit keyboard with cherry MX brown switches, durable and responsive for typing and gaming.", Price: 12000, Stock: 40},
-		{Name: "", Description: "27-inch 4K UHD monitor with USB-C connectivity and thin bezels, perfect for professional work.", Price:  39999, Stock: 0 ,},
+		{Name: "", Description: "27-inch 4K UHD monitor with USB-C connectivity and thin bezels, perfect for professional work.", Price: 39999, Stock: 0},
 		{Name: "Noise-Cancelling Headphones", Description: "Over-ear headphones with active noise cancellation, 30-hour battery life, and superior sound quality.", Price: 19999, Stock: 200},
 		{Name: "USB 3.0 Hub", Description: "A 4-port USB 3.0 hub with a dedicated power adapter for connecting multiple peripherals simultaneously.", Price: 2550, Stock: 300},
-		{Name:"Wireless Ergonomic Mouse", Description: "A comfortable mouse with a 2.4 GHz wireless connection and an ergonomic design for long-term use.", Price: 4599, Stock: 150},
+		{Name: "Wireless Ergonomic Mouse", Description: "A comfortable mouse with a 2.4 GHz wireless connection and an ergonomic design for long-term use.", Price: 4599, Stock: 150},
 	}
 
 	productRepo := NewProductRepository(dbConnection)
@@ -50,10 +50,10 @@ func TestProductRepository(t *testing.T) {
 		}
 
 	})
+
 	t.Run("Create product without name", func(t *testing.T) {
 
 		ctx := context.Background()
-
 		noName := productCreator(products[1])
 
 		_, err := productRepo.Create(ctx, noName)
@@ -62,7 +62,7 @@ func TestProductRepository(t *testing.T) {
 			t.Error("Should have gotten and error but didn't", err)
 		}
 
-		results, err :=queryProductsTable(ctx, *productRepo)
+		results, err := queryProductsTable(ctx, *productRepo)
 
 		t.Logf("Products found %v\n", results)
 		if err != nil {
