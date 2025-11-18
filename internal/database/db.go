@@ -1,126 +1,157 @@
 package database
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"log"
+	"os"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/jackc/pgx/v5"
+	"github.com/joho/godotenv"
 )
 
 // SetupTestUserDB creates a temporary in memory test user database  with both users and refresh_tokens tables
-func SetupTestDB() *sql.DB {
-	db, err := sql.Open("sqlite3", ":memory:")
+func loadEnv(envString string) string {
+	// Load .env file if it exists
+	err := godotenv.Load("../../.env")
 	if err != nil {
-		log.Fatalf("Failed to open test database: %v", err)
+		log.Fatalf("An error occurred while loading .env: %v", err)
 	}
 
-	_, err = db.Exec("PRAGMA foreign_keys = ON")
-	if err != nil {
-		log.Fatalf("Failed to enable foreign keys: %v", err)
+	dbString := os.Getenv(envString)
+	if dbString == "" {
+		log.Fatalf("TEST_DB_URL not set in env")
 	}
-
-	usersQuery := `
-		CREATE TABLE IF NOT EXISTS users (
-		id TEXT PRIMARY KEY,
-		username TEXT NOT NULL UNIQUE,
-		first_name TEXT NOT NULL,
-		last_name TEXT NOT NULL,
-		email TEXT NOT NULL UNIQUE,
-		password_hash TEXT NOT NULL,
-		balance INTEGER NOT NULL DEFAULT 0,
-		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		last_login DATETIME
-		)
-	`
-	_, err = db.Exec(usersQuery)
-	if err != nil {
-		log.Fatalf("Failed to create table: %v", err)
-	}
-
-	refreshTokensQuery := `
-		CREATE TABLE IF NOT EXISTS refresh_tokens (
-		id TEXT PRIMARY KEY,
-		user_id TEXT NOT NULL,
-		token TEXT NOT NULL UNIQUE,
-		expires_at DATETIME NOT NULL,
-		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		revoked BOOLEAN NOT NULL DEFAULT FALSE,
-		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-		);
-
-		CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
-		CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
-		CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
-	`
-	_, err = db.Exec(refreshTokensQuery)
-	if err != nil {
-		log.Fatalf("Failed to create table: %v", err)
-	}
-	return db
+	return dbString
 }
 
-// SetupTestUserDB creates a temporary in-memory database with just the users table
-// Use this only if you need to test users in isolation
-func SetupTestUserDB() *sql.DB {
-	db, err := sql.Open("sqlite3", ":memory:")
+func SetupTestDB() (*pgx.Conn, error) {
+	dbString := loadEnv("TEST_DB_URL")
+
+	ctx := context.Background()
+
+	db, err := pgx.Connect(ctx, dbString)
 	if err != nil {
 		log.Fatalf("Failed to open test database: %v", err)
 	}
-
-	_, err = db.Exec("PRAGMA foreign_keys = ON")
-	if err != nil {
-		log.Fatalf("Failed to enable foreign keys: %v", err)
-	}
-
-	query := `
-		CREATE TABLE IF NOT EXISTS users (
-			id TEXT PRIMARY KEY,
-			username TEXT NOT NULL UNIQUE,
-			first_name TEXT NOT NULL,
-			last_name TEXT NOT NULL,
-			email TEXT NOT NULL UNIQUE,
-			password_hash TEXT NOT NULL,
-			balance INTEGER NOT NULL DEFAULT 0,
-			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			last_login DATETIME
-		)
-	`
-	_, err = db.Exec(query)
+	usersQuery := `
+	CREATE TEMPORARY TABLE users (
+		id UUID PRIMARY KEY,
+		username VARCHAR(255) NOT NULL UNIQUE,
+		first_name VARCHAR(255) NOT NULL,
+		last_name VARCHAR(255) NOT NULL,
+		email VARCHAR(255) NOT NULL UNIQUE,
+		password_hash VARCHAR(255) NOT NULL,
+		balance INTEGER NOT NULL DEFAULT 0,
+		created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+		last_login TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+		);`
+	_, err = db.Exec(ctx, usersQuery)
 	if err != nil {
 		log.Fatalf("Failed to create users table: %v", err)
 	}
 
-	return db
+	refreshTokensQuery := `
+	CREATE TEMPORARY TABLE refresh_tokens (
+		id UUID PRIMARY KEY,
+		user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		token VARCHAR(512) NOT NULL UNIQUE,
+		expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+		created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+		revoked BOOLEAN NOT NULL DEFAULT FALSE
+		);
+	`
+	_, err = db.Exec(ctx, refreshTokensQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create refresh_tokens table: %v", err)
+	}
+
+	productsQuery := `
+	CREATE TEMPORARY TABLE products(
+	  id UUID PRIMARY KEY,
+    name VARCHAR(255) NOT NULL CHECK (name <>''),
+    description TEXT,
+    price INTEGER NOT NULL,
+    stock INTEGER NOT NULL DEFAULT 0,
+    image_url TEXT,
+    category VARCHAR(255),
+    last_restock TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+	);
+	`
+	_, err = db.Exec(ctx, productsQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create products table %v", err)
+	}
+
+	inventoryQuery := `
+	CREATE TEMPORARY TABLE inventory (
+		user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+		quantity INTEGER NOT NULL DEFAULT 0,
+		PRIMARY KEY (user_id, product_id),
+		CONSTRAINT quantity_positive CHECK (quantity > 0)
+	);
+
+		CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+		CREATE INDEX idx_refresh_tokens_token ON refresh_tokens(token);
+		CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
+		CREATE INDEX idx_inventory_user_id ON inventory(user_id);
+		CREATE INDEX idx_inventory_product_id ON inventory(product_id);
+		CREATE INDEX idx_users_email ON users(email);
+		CREATE INDEX idx_users_username ON users(username);
+	`
+	_, err = db.Exec(ctx, inventoryQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create inventory table %v", err)
+	}
+
+	return db, nil
 }
 
-// SetupTestRefreshTokenDB creates an in-memory database with both tables
-// (refresh tokens need users table to exist for foreign key)
-func SetupTestRefreshTokenDB() *sql.DB {
-	// Just call SetupTestDB since refresh_tokens requires users table
-	return SetupTestDB()
+// SetupTestUserDB creates a temporary in-memory database with just the users table
+// Use this only to test users in isolation
+func SetupTestUserDB() (*pgx.Conn, error) {
+	connString := os.Getenv("TEST_DATABASE_URL")
+	if connString == " " {
+		return nil, fmt.Errorf("TEST_DATABASE_URL not set")
+	}
+
+	ctx := context.Background()
+
+	db, err := pgx.Connect(ctx, connString)
+	if err != nil {
+		log.Fatalf("Failed to open test database: %v", err)
+	}
+
+	query := `
+	CREATE TEMPORARY TABLE users (
+    id UUID PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    balance INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    last_login TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+		)
+	`
+	_, err = db.Exec(ctx, query)
+	if err != nil {
+		log.Fatalf("Failed to create users table: %v", err)
+	}
+
+	return db, nil
 }
 
 // CleanupTestDB closes and cleans up the test database
-func CleanupTestDB(db *sql.DB) {
+func CleanupTestDB(db *pgx.Conn) {
+	ctx := context.Background()
 	if db != nil {
-		if err := db.Close(); err != nil {
+		if err := db.Close(ctx); err != nil {
 			fmt.Printf("Warning: Failed to close test database: %v\n", err)
 		}
 	}
-}
-
-// TruncateTables removes all data from tables (useful between tests)
-func TruncateTables(db *sql.DB) error {
-	// Delete in order (child tables first to respect foreign keys)
-	tables := []string{"refresh_tokens", "users"}
-
-	for _, table := range tables {
-		_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", table))
-		if err != nil {
-			return fmt.Errorf("failed to truncate %s: %w", table, err)
-		}
-	}
-
-	return nil
 }

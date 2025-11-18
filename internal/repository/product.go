@@ -1,119 +1,125 @@
 package repository
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/diorshelton/golden-market-api/internal/models"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 // ProductRepository handles database operations for products
 type ProductRepository struct {
-	db *sql.DB
+	db *pgx.Conn
 }
 
 // NewProductRepository creates a new product repository
-func NewProductRepository(db *sql.DB) *ProductRepository {
+func NewProductRepository(db *pgx.Conn) *ProductRepository {
 	return &ProductRepository{db: db}
 }
 
 // Create adds a new product to the database
-func (r *ProductRepository) Create(product *models.Product) error {
-
+func (r *ProductRepository) Create(ctx context.Context, product *models.Product) error {
 	query := `
-	INSERT INTO products (id, name, description, price, stock, image_url, category, created_at, updated_at)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO products (id, name, description, price, stock, image_url, category, last_restock, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`
+	now := time.Now().UTC()
 
 	_, err := r.db.Exec(
+		ctx,
 		query,
-		&product.ID,
-		&product.Name,
-		&product.Price,
-		&product.Stock,
-		&product.CreatedAt,
-		&product.UpdatedAt,
+		product.ID,
+		product.Name,
+		product.Description,
+		product.Price,
+		product.Stock,
+		product.ImageURL,
+		product.Category,
+		now,
+		now,
+		now,
 	)
+
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to insert product: %w", err)
 	}
 
 	return nil
 }
 
 // UpdateStock updates the stock quantity for a product
-func (r *ProductRepository) UpdateStock(productID uuid.UUID, newStock int) error {
-	query := `UPDATE products SET stock = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
-	_, err := r.db.Exec(query, newStock, productID)
+func (r *ProductRepository) UpdateStock(ctx context.Context, productID uuid.UUID, newStock int) error {
+	query := `UPDATE products SET stock = $1, updated_at = NOW() WHERE id = $2`
+	_, err := r.db.Exec(ctx, query, newStock, productID)
 	if err != nil {
-		return fmt.Errorf("failed to update stock %w", err)
+		return fmt.Errorf("failed to update stock: %w", err)
 	}
 	return nil
 }
 
-func (r ProductRepository) DecrementStock(productID uuid.UUID, quantity int) error {
+// DecrementStock decrements the stock by the given quantity
+func (r *ProductRepository) DecrementStock(ctx context.Context, productID uuid.UUID, quantity int) error {
 	query := `
-	UPDATE products
-	SET stock = stock - ?, updated_at = CURRENT_TIMESTAMP
-	WHERE id = ? AND stock >= ?
+		UPDATE products
+		SET stock = stock - $1, updated_at = NOW()
+		WHERE id = $2 AND stock >= $3
 	`
-	result, err := r.db.Exec(query, quantity, productID, quantity)
+	result, err := r.db.Exec(ctx, query, quantity, productID, quantity)
 	if err != nil {
 		return fmt.Errorf("failed to decrement stock: %w", err)
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
-	}
-
-	if rowsAffected == 0 {
+	if result.RowsAffected() == 0 {
 		return fmt.Errorf("insufficient stock or product not found")
 	}
 	return nil
 }
 
 // Delete removes a product from the database
-func (r *ProductRepository) Delete(productID int) error {
-	query := `DELETE FROM products WHERE id = ?`
-	_, err := r.db.Exec(query, productID)
+func (r *ProductRepository) Delete(ctx context.Context, productID uuid.UUID) error {
+	query := `DELETE FROM products WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, productID)
 	if err != nil {
 		return fmt.Errorf("failed to delete product: %w", err)
 	}
 	return nil
 }
 
-// GetAll retrieves all products
-func (r *ProductRepository) GetAll(category string, minPrice, maxPrice int) ([]models.Product, error) {
-
+// GetAll retrieves all products with optional filtering
+func (r *ProductRepository) GetAll(ctx context.Context, category string, minPrice, maxPrice int) ([]models.Product, error) {
 	query := `
-		SELECT id, name, description, price, stock, image_url,
-		category, created_at, updated_at
+		SELECT id, name, description, price, stock, image_url, category, last_restock, created_at, updated_at
 		FROM products
 		WHERE 1=1
 	`
 	args := []any{}
+	paramCount := 1
 
 	if category != "" {
-		query += " AND category = ?"
+		query += fmt.Sprintf(" AND category = $%d", paramCount)
 		args = append(args, category)
+		paramCount++
 	}
 
 	if minPrice > 0 {
-		query += " AND price >= ?"
+		query += fmt.Sprintf(" AND price >= $%d", paramCount)
 		args = append(args, minPrice)
+		paramCount++
 	}
 
 	if maxPrice > 0 {
-		query += " AND price <= ?"
+		query += fmt.Sprintf(" AND price <= $%d", paramCount)
 		args = append(args, maxPrice)
+		paramCount++
 	}
 
 	query += " ORDER BY name ASC"
 
-	rows, err := r.db.Query(query, args...)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query products: %w", err)
 	}
@@ -122,7 +128,7 @@ func (r *ProductRepository) GetAll(category string, minPrice, maxPrice int) ([]m
 	var products []models.Product
 	for rows.Next() {
 		var product models.Product
-		var imageURL sql.NullString
+		var imageURL *string
 
 		err := rows.Scan(
 			&product.ID,
@@ -132,6 +138,7 @@ func (r *ProductRepository) GetAll(category string, minPrice, maxPrice int) ([]m
 			&product.Stock,
 			&imageURL,
 			&product.Category,
+			&product.LastRestock,
 			&product.CreatedAt,
 			&product.UpdatedAt,
 		)
@@ -139,8 +146,8 @@ func (r *ProductRepository) GetAll(category string, minPrice, maxPrice int) ([]m
 			return nil, fmt.Errorf("failed to scan product: %w", err)
 		}
 
-		if imageURL.Valid {
-			product.ImageURL = imageURL.String
+		if imageURL != nil {
+			product.ImageURL = *imageURL
 		}
 
 		products = append(products, product)
@@ -154,18 +161,17 @@ func (r *ProductRepository) GetAll(category string, minPrice, maxPrice int) ([]m
 }
 
 // GetByID retrieves a product by its ID
-func (r *ProductRepository) GetByID(id uuid.UUID) (*models.Product, error) {
-
+func (r *ProductRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Product, error) {
 	query := `
-		SELECT id, name, description, price, stock, image_url, category,created_at, updated_at
+		SELECT id, name, description, price, stock, image_url, category, last_restock, created_at, updated_at
 		FROM products
-		WHERE id = ?
+		WHERE id = $1
 	`
 
 	var product models.Product
-	var imageURL sql.NullString
+	var imageURL *string
 
-	err := r.db.QueryRow(query, id).Scan(
+	err := r.db.QueryRow(ctx, query, id).Scan(
 		&product.ID,
 		&product.Name,
 		&product.Description,
@@ -173,45 +179,42 @@ func (r *ProductRepository) GetByID(id uuid.UUID) (*models.Product, error) {
 		&product.Stock,
 		&imageURL,
 		&product.Category,
+		&product.LastRestock,
 		&product.CreatedAt,
 		&product.UpdatedAt,
 	)
 
-	if err == sql.ErrNoRows {
-		return nil, fmt.Errorf("product not found")
-	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to get product: %w", err)
 	}
 
-	if imageURL.Valid {
-		product.ImageURL = imageURL.String
+	if imageURL != nil {
+		product.ImageURL = *imageURL
 	}
 
 	return &product, nil
 }
 
-// SearchProducts searches product by name or description
-
-func (r ProductRepository) SearchProducts(searchTerm string) ([]models.Product, error) {
+// SearchProducts searches products by name or description
+func (r *ProductRepository) SearchProducts(ctx context.Context, searchTerm string) ([]models.Product, error) {
 	query := `
-	SELECT id, name, description, price, stock, image_url, category, created_at, updated_at
-	FROM products
-	WHERE name LIKE ? OR description LIKE ?
-	ORDER BY name ASC
- `
+		SELECT id, name, description, price, stock, image_url, category, last_restock, created_at, updated_at
+		FROM products
+		WHERE LOWER(name) LIKE $1 OR LOWER(description) LIKE $1
+		ORDER BY name ASC
+	`
 
 	searchPattern := "%" + strings.ToLower(searchTerm) + "%"
-	rows, err := r.db.Query(query, searchPattern, searchPattern)
+	rows, err := r.db.Query(ctx, query, searchPattern)
 	if err != nil {
-		return nil, fmt.Errorf("failed to search products %w", err)
+		return nil, fmt.Errorf("failed to search products: %w", err)
 	}
 	defer rows.Close()
 
 	var products []models.Product
 	for rows.Next() {
 		var product models.Product
-		var imageURL sql.NullString
+		var imageURL *string
 
 		err := rows.Scan(
 			&product.ID,
@@ -221,6 +224,7 @@ func (r ProductRepository) SearchProducts(searchTerm string) ([]models.Product, 
 			&product.Stock,
 			&imageURL,
 			&product.Category,
+			&product.LastRestock,
 			&product.CreatedAt,
 			&product.UpdatedAt,
 		)
@@ -228,11 +232,12 @@ func (r ProductRepository) SearchProducts(searchTerm string) ([]models.Product, 
 			return nil, fmt.Errorf("failed to scan product: %w", err)
 		}
 
-		if imageURL.Valid {
-			product.ImageURL = imageURL.String
+		if imageURL != nil {
+			product.ImageURL = *imageURL
 		}
 
 		products = append(products, product)
 	}
-	return products, nil
+
+	return products, rows.Err()
 }

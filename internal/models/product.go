@@ -15,6 +15,7 @@ type Product struct {
 	Stock       int       `json:"stock"`
 	ImageURL    string    `json:"image_url,omitempty"`
 	Category    string    `json:"category"`
+	LastRestock time.Time `json:"last_restock"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"log"
@@ -48,8 +49,13 @@ func main() {
 	loadEnv()
 
 	// Set up databases
-	database := database.SetupTestDB()
-	defer database.Close()
+	database, err := database.SetupTestDB()
+	if err != nil {
+		log.Fatalf("Failed to set up test databases: %v", err)
+	}
+
+	ctx := context.Background()
+	defer database.Close(ctx)
 
 	// Create repositories
 	tokenRepo := repository.NewRefreshTokenRepository(database)
