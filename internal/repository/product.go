@@ -1,172 +1,243 @@
 package repository
 
 import (
-	"database/sql"
+	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/diorshelton/golden-market-api/internal/models"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 // ProductRepository handles database operations for products
 type ProductRepository struct {
-	db *sql.DB
+	db *pgx.Conn
 }
 
 // NewProductRepository creates a new product repository
-func NewProductRepository(db *sql.DB) *ProductRepository {
+func NewProductRepository(db *pgx.Conn) *ProductRepository {
 	return &ProductRepository{db: db}
 }
 
 // Create adds a new product to the database
-func (r *ProductRepository) Create(product *models.Product) error {
+func (r *ProductRepository) Create(ctx context.Context, product *models.Product) error {
 	query := `
-		INSERT INTO products (name, description, price, stock, restock_rate, max_stock, vendor_id, last_restock, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO products (id, name, description, price, stock, image_url, category, last_restock, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`
-	result, err := r.db.Exec(
+	now := time.Now().UTC()
+
+	_, err := r.db.Exec(
+		ctx,
 		query,
+		product.ID,
 		product.Name,
 		product.Description,
 		product.Price,
 		product.Stock,
-		product.RestockRate,
-		product.MaxStock,
-		product.VendorID,
-		product.LastRestock,
-		time.Now().UTC(),
+		product.ImageURL,
+		product.Category,
+		now,
+		now,
+		now,
 	)
+
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to insert product: %w", err)
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return err
-	}
-	product.ID = int(id)
 	return nil
 }
 
-// GetByID retrieves a product by its ID
-func (r *ProductRepository) GetByID(id int) (*models.Product, error) {
+// UpdateStock updates the stock quantity for a product
+func (r *ProductRepository) UpdateStock(ctx context.Context, productID uuid.UUID, newStock int) error {
+	query := `UPDATE products SET stock = $1, updated_at = NOW() WHERE id = $2`
+	_, err := r.db.Exec(ctx, query, newStock, productID)
+	if err != nil {
+		return fmt.Errorf("failed to update stock: %w", err)
+	}
+	return nil
+}
+
+// DecrementStock decrements the stock by the given quantity
+func (r *ProductRepository) DecrementStock(ctx context.Context, productID uuid.UUID, quantity int) error {
 	query := `
-		SELECT id, name, description, price, stock, restock_rate, max_stock, vendor_id, last_restock, created_at
+		UPDATE products
+		SET stock = stock - $1, updated_at = NOW()
+		WHERE id = $2 AND stock >= $3
+	`
+	result, err := r.db.Exec(ctx, query, quantity, productID, quantity)
+	if err != nil {
+		return fmt.Errorf("failed to decrement stock: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("insufficient stock or product not found")
+	}
+	return nil
+}
+
+// Delete removes a product from the database
+func (r *ProductRepository) Delete(ctx context.Context, productID uuid.UUID) error {
+	query := `DELETE FROM products WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, productID)
+	if err != nil {
+		return fmt.Errorf("failed to delete product: %w", err)
+	}
+	return nil
+}
+
+// GetAll retrieves all products with optional filtering
+func (r *ProductRepository) GetAll(ctx context.Context, category string, minPrice, maxPrice int) ([]models.Product, error) {
+	query := `
+		SELECT id, name, description, price, stock, image_url, category, last_restock, created_at, updated_at
 		FROM products
-		WHERE id = ?
+		WHERE 1=1
+	`
+	args := []any{}
+	paramCount := 1
+
+	if category != "" {
+		query += fmt.Sprintf(" AND category = $%d", paramCount)
+		args = append(args, category)
+		paramCount++
+	}
+
+	if minPrice > 0 {
+		query += fmt.Sprintf(" AND price >= $%d", paramCount)
+		args = append(args, minPrice)
+		paramCount++
+	}
+
+	if maxPrice > 0 {
+		query += fmt.Sprintf(" AND price <= $%d", paramCount)
+		args = append(args, maxPrice)
+		paramCount++
+	}
+
+	query += " ORDER BY name ASC"
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query products: %w", err)
+	}
+	defer rows.Close()
+
+	var products []models.Product
+	for rows.Next() {
+		var product models.Product
+		var imageURL *string
+
+		err := rows.Scan(
+			&product.ID,
+			&product.Name,
+			&product.Description,
+			&product.Price,
+			&product.Stock,
+			&imageURL,
+			&product.Category,
+			&product.LastRestock,
+			&product.CreatedAt,
+			&product.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan product: %w", err)
+		}
+
+		if imageURL != nil {
+			product.ImageURL = *imageURL
+		}
+
+		products = append(products, product)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating products: %w", err)
+	}
+
+	return products, nil
+}
+
+// GetByID retrieves a product by its ID
+func (r *ProductRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Product, error) {
+	query := `
+		SELECT id, name, description, price, stock, image_url, category, last_restock, created_at, updated_at
+		FROM products
+		WHERE id = $1
 	`
 
 	var product models.Product
-	err := r.db.QueryRow(query, id).Scan(
+	var imageURL *string
+
+	err := r.db.QueryRow(ctx, query, id).Scan(
 		&product.ID,
 		&product.Name,
 		&product.Description,
 		&product.Price,
 		&product.Stock,
-		&product.RestockRate,
-		&product.MaxStock,
-		&product.VendorID,
+		&imageURL,
+		&product.Category,
 		&product.LastRestock,
 		&product.CreatedAt,
+		&product.UpdatedAt,
 	)
+
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get product: %w", err)
+	}
+
+	if imageURL != nil {
+		product.ImageURL = *imageURL
 	}
 
 	return &product, nil
 }
 
-// GetByVendorID retrieves all products for a specific vendor
-func (r *ProductRepository) GetByVendorID(vendorID int) ([]*models.Product, error) {
+// SearchProducts searches products by name or description
+func (r *ProductRepository) SearchProducts(ctx context.Context, searchTerm string) ([]models.Product, error) {
 	query := `
-		SELECT id, name, description, price, stock, restock_rate, max_stock, vendor_id, last_restock, created_at
+		SELECT id, name, description, price, stock, image_url, category, last_restock, created_at, updated_at
 		FROM products
-		WHERE vendor_id = ?
+		WHERE LOWER(name) LIKE $1 OR LOWER(description) LIKE $1
+		ORDER BY name ASC
 	`
 
-	rows, err := r.db.Query(query, vendorID)
+	searchPattern := "%" + strings.ToLower(searchTerm) + "%"
+	rows, err := r.db.Query(ctx, query, searchPattern)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to search products: %w", err)
 	}
 	defer rows.Close()
 
-	var products []*models.Product
+	var products []models.Product
 	for rows.Next() {
 		var product models.Product
+		var imageURL *string
+
 		err := rows.Scan(
 			&product.ID,
 			&product.Name,
 			&product.Description,
 			&product.Price,
 			&product.Stock,
-			&product.RestockRate,
-			&product.MaxStock,
-			&product.VendorID,
+			&imageURL,
+			&product.Category,
 			&product.LastRestock,
 			&product.CreatedAt,
+			&product.UpdatedAt,
 		)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to scan product: %w", err)
 		}
-		products = append(products, &product)
+
+		if imageURL != nil {
+			product.ImageURL = *imageURL
+		}
+
+		products = append(products, product)
 	}
 
 	return products, rows.Err()
-}
-
-// GetAll retrieves all products
-func (r *ProductRepository) GetAll() ([]*models.Product, error) {
-	query := `
-		SELECT id, name, description, price, stock, restock_rate, max_stock, vendor_id, last_restock, created_at
-		FROM products
-	`
-
-	rows, err := r.db.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var products []*models.Product
-	for rows.Next() {
-		var product models.Product
-		err := rows.Scan(
-			&product.ID,
-			&product.Name,
-			&product.Description,
-			&product.Price,
-			&product.Stock,
-			&product.RestockRate,
-			&product.MaxStock,
-			&product.VendorID,
-			&product.LastRestock,
-			&product.CreatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-		products = append(products, &product)
-	}
-
-	return products, rows.Err()
-}
-
-// UpdateStock updates the stock level for a product
-func (r *ProductRepository) UpdateStock(productID, newStock int) error {
-	query := `UPDATE products SET stock = ? WHERE id = ?`
-	_, err := r.db.Exec(query, newStock, productID)
-	return err
-}
-
-// UpdateLastRestock updates the last restock timestamp
-func (r *ProductRepository) UpdateLastRestock(productID int, lastRestock time.Time) error {
-	query := `UPDATE products SET last_restock = ? WHERE id = ?`
-	_, err := r.db.Exec(query, lastRestock, productID)
-	return err
-}
-
-// Delete removes a product from the database
-func (r *ProductRepository) Delete(productID int) error {
-	query := `DELETE FROM products WHERE id = ?`
-	_, err := r.db.Exec(query, productID)
-	return err
 }

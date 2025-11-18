@@ -1,13 +1,13 @@
 # Golden Market API
 
-A RESTful API for an online farmers market simulation where users can purchase items from vendors using virtual coins and manage their inventory.
+A RESTful API for an online farmers market simulation where users can purchase items using virtual coins and manage their inventory.
 
 ## 🎯 Project Overview
 
 Golden Market is a portfolio project demonstrating full-stack API development with Go. The platform simulates a farmers market economy where users can:
 
 - Create accounts and authenticate securely
-- Browse products from various vendors
+- Browse products
 - Purchase items using virtual coins
 - Manage personal inventory
 - (More features in development)
@@ -47,10 +47,15 @@ go mod download
 Create a `.env` file in the root directory:
 
 ```env
+PORT=8080
 JWT_SECRET=your-secret-key-here
 REFRESH_SECRET=your-refresh-secret-here
 ACCESS_TOKEN_EXPIRY=15m
 REFRESH_TOKEN_EXPIRY=7d
+DB_URL=postgres://user:password@localhost:5432/golden_market?sslmode=disable
+TEST_DB_URL=postgres://user:password@localhost:5432/golden_market_test?sslmode=disable
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+
 ```
 
 ### Running the Application
@@ -117,26 +122,28 @@ The API uses JWT-based authentication with access and refresh tokens:
 - [x] User authentication (register/login)
 - [x] JWT token management
 - [x] Basic user models
+- [x] Rate limiting
 
 ### 🚧 In Progress
 
-- [ ] Vendor system
 - [ ] Product catalog
 - [ ] Virtual coin economy
+- [ ] Purchase transactions
+- [ ] PostgreSQL migration
 
 ### 📅 Planned Features
 
-- [ ] Purchase transactions
-- [ ] User inventory management
-- [ ] Vendor dashboard
-- [ ] Product reviews/ratings
 - [ ] Search and filtering
-- [ ] PostgreSQL migration
+- [ ] User inventory management
+- [ ] Product reviews/ratings
 - [ ] API documentation (Swagger)
-- [ ] Rate limiting
 - [ ] Comprehensive test coverage
 
 ## 🧪 Testing
+
+### Running Tests
+Set up a test Postgres instance and set `TEST_DB_URL`:
+`postgres://user:pass@localhost:5432/test_db?sslmode=disable`
 
 Run the test suite:
 
