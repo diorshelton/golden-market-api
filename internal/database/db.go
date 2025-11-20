@@ -155,7 +155,7 @@ func SetupDB() (*pgx.Conn, error) {
 
 	// Create tables if they don't exist (NOT TEMPORARY)
 	usersQuery := `
-	CREATE TABLE  users (
+	CREATE TABLE IF NOT EXISTS users (
 		id UUID PRIMARY KEY,
 		username VARCHAR(255) NOT NULL UNIQUE,
 		first_name VARCHAR(255) NOT NULL,
@@ -173,7 +173,7 @@ func SetupDB() (*pgx.Conn, error) {
 	}
 
 	refreshTokensQuery := `
-	CREATE TABLE  refresh_tokens (
+	CREATE TABLE IF NOT EXISTS refresh_tokens (
 		id UUID PRIMARY KEY,
 		user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 		token VARCHAR(512) NOT NULL UNIQUE,
@@ -188,7 +188,7 @@ func SetupDB() (*pgx.Conn, error) {
 	}
 
 	productsQuery := `
-	CREATE TABLE  products (
+	CREATE TABLE IF NOT EXISTS products (
 		id UUID PRIMARY KEY,
 		name VARCHAR(255) NOT NULL CHECK (name <>''),
 		description TEXT,
@@ -207,7 +207,7 @@ func SetupDB() (*pgx.Conn, error) {
 	}
 
 	inventoryQuery := `
-	CREATE TABLE  inventory (
+	CREATE TABLE IF NOT EXISTS inventory (
 		user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 		product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
 		quantity INTEGER NOT NULL DEFAULT 0,
@@ -222,13 +222,13 @@ func SetupDB() (*pgx.Conn, error) {
 
 	// Create indexes if they don't exist
 	indexQuery := `
-		CREATE INDEX  idx_refresh_tokens_user_id ON refresh_tokens(user_id);
-		CREATE INDEX  idx_refresh_tokens_token ON refresh_tokens(token);
-		CREATE INDEX  idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
-		CREATE INDEX  idx_inventory_user_id ON inventory(user_id);
-		CREATE INDEX  idx_inventory_product_id ON inventory(product_id);
-		CREATE INDEX  idx_users_email ON users(email);
-		CREATE INDEX  idx_users_username ON users(username);
+		CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+		CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
+		CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
+		CREATE INDEX IF NOT EXISTS idx_inventory_user_id ON inventory(user_id);
+		CREATE INDEX IF NOT EXISTS idx_inventory_product_id ON inventory(product_id);
+		CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+		CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 	`
 
 	_, err = db.Exec(ctx, indexQuery)
