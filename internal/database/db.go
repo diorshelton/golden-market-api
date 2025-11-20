@@ -34,7 +34,7 @@ func SetupTestDB() (*pgx.Conn, error) {
 		log.Fatalf("Failed to open test database: %v", err)
 	}
 	usersQuery := `
-	CREATE TEMPORARY TABLE users (
+	CREATE TEMPORARY TABLE  users (
 		id UUID PRIMARY KEY,
 		username VARCHAR(255) NOT NULL UNIQUE,
 		first_name VARCHAR(255) NOT NULL,
@@ -140,6 +140,100 @@ func SetupTestUserDB() (*pgx.Conn, error) {
 	_, err = db.Exec(ctx, query)
 	if err != nil {
 		log.Fatalf("Failed to create users table: %v", err)
+	}
+
+	return db, nil
+}
+
+func SetupDB() (*pgx.Conn, error) {
+	dbString := loadEnv("TEST_DB_URL") // We'll rename this env var later
+	ctx := context.Background()
+	db, err := pgx.Connect(ctx, dbString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	// Create tables if they don't exist (NOT TEMPORARY)
+	usersQuery := `
+	CREATE TABLE  users (
+		id UUID PRIMARY KEY,
+		username VARCHAR(255) NOT NULL UNIQUE,
+		first_name VARCHAR(255) NOT NULL,
+		last_name VARCHAR(255) NOT NULL,
+		email VARCHAR(255) NOT NULL UNIQUE,
+		password_hash VARCHAR(255) NOT NULL,
+		balance INTEGER NOT NULL DEFAULT 0,
+		created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+		last_login TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+	);`
+
+	_, err = db.Exec(ctx, usersQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create users table: %w", err)
+	}
+
+	refreshTokensQuery := `
+	CREATE TABLE  refresh_tokens (
+		id UUID PRIMARY KEY,
+		user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		token VARCHAR(512) NOT NULL UNIQUE,
+		expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+		created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+		revoked BOOLEAN NOT NULL DEFAULT FALSE
+	);`
+
+	_, err = db.Exec(ctx, refreshTokensQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create refresh_tokens table: %w", err)
+	}
+
+	productsQuery := `
+	CREATE TABLE  products (
+		id UUID PRIMARY KEY,
+		name VARCHAR(255) NOT NULL CHECK (name <>''),
+		description TEXT,
+		price INTEGER NOT NULL,
+		stock INTEGER NOT NULL DEFAULT 0,
+		image_url TEXT,
+		category VARCHAR(255),
+		last_restock TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+		created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+		updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+	);`
+
+	_, err = db.Exec(ctx, productsQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create products table: %w", err)
+	}
+
+	inventoryQuery := `
+	CREATE TABLE  inventory (
+		user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+		quantity INTEGER NOT NULL DEFAULT 0,
+		PRIMARY KEY (user_id, product_id),
+		CONSTRAINT quantity_positive CHECK (quantity > 0)
+	);`
+
+	_, err = db.Exec(ctx, inventoryQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create inventory table: %w", err)
+	}
+
+	// Create indexes if they don't exist
+	indexQuery := `
+		CREATE INDEX  idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+		CREATE INDEX  idx_refresh_tokens_token ON refresh_tokens(token);
+		CREATE INDEX  idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
+		CREATE INDEX  idx_inventory_user_id ON inventory(user_id);
+		CREATE INDEX  idx_inventory_product_id ON inventory(product_id);
+		CREATE INDEX  idx_users_email ON users(email);
+		CREATE INDEX  idx_users_username ON users(username);
+	`
+
+	_, err = db.Exec(ctx, indexQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create indexes: %w", err)
 	}
 
 	return db, nil

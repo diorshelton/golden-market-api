@@ -49,13 +49,11 @@ func main() {
 	loadEnv()
 
 	// Set up databases
-	database, err := database.SetupTestDB()
+	database, err := database.SetupDB()
 	if err != nil {
-		log.Fatalf("Failed to set up test databases: %v", err)
+		log.Fatal(err)
 	}
-
-	ctx := context.Background()
-	defer database.Close(ctx)
+	defer database.Close(context.Background())
 
 	// Create repositories
 	tokenRepo := repository.NewRefreshTokenRepository(database)
