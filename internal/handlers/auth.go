@@ -82,6 +82,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		}
 
 		http.Error(w, "Error creating user", http.StatusConflict)
+		log.Printf("Error occurred: %v", err)
 		return
 	}
 
