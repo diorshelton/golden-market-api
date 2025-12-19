@@ -8,15 +8,15 @@ import (
 
 	"github.com/diorshelton/golden-market-api/internal/models"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // RefreshTokenRepository handles database operations for refresh tokens
 type RefreshTokenRepository struct {
-	db *pgx.Conn
+	db *pgxpool.Pool
 }
 
-func NewRefreshTokenRepository(db *pgx.Conn) *RefreshTokenRepository {
+func NewRefreshTokenRepository(db *pgxpool.Pool) *RefreshTokenRepository {
 	return &RefreshTokenRepository{db: db}
 }
 

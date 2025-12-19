@@ -8,16 +8,16 @@ import (
 
 	"github.com/diorshelton/golden-market-api/internal/models"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // UserRepository handles database operations for users
 type UserRepository struct {
-	db *pgx.Conn
+	db *pgxpool.Pool
 }
 
 // NewUserRepository creates a new user repository
-func NewUserRepository(db *pgx.Conn) *UserRepository {
+func NewUserRepository(db *pgxpool.Pool) *UserRepository {
 	return &UserRepository{db: db}
 }
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"log"
@@ -53,7 +52,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer database.Close(context.Background())
+	defer database.Close()
 
 	// Create repositories
 	tokenRepo := repository.NewRefreshTokenRepository(database)

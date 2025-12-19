@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
 
@@ -118,7 +119,6 @@ func SetupTestUserDB() (*pgx.Conn, error) {
 	}
 
 	ctx := context.Background()
-
 	db, err := pgx.Connect(ctx, connString)
 	if err != nil {
 		log.Fatalf("Failed to open test database: %v", err)
@@ -145,10 +145,10 @@ func SetupTestUserDB() (*pgx.Conn, error) {
 	return db, nil
 }
 
-func SetupDB() (*pgx.Conn, error) {
+func SetupDB() (*pgxpool.Pool, error) {
 	dbString := loadEnv("TEST_DB_URL") // We'll rename this env var later
 	ctx := context.Background()
-	db, err := pgx.Connect(ctx, dbString)
+	db, err := pgxpool.New(ctx, dbString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
