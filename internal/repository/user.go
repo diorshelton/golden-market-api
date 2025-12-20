@@ -165,6 +165,38 @@ func (r *UserRepository) GetUserByID(id uuid.UUID) (*models.User, error) {
 
 	return &user, nil
 }
+func (r *UserRepository) GetUserProfile(id uuid.UUID) (*models.User, error) {
+	query := `
+		SELECT id, username, first_name, last_name, email, balance, created_at
+		FROM users
+		WHERE id = $1
+	`
+
+	var user models.User
+	var lastLogin sql.NullTime
+
+	ctx := context.Background()
+
+	err := r.db.QueryRow(ctx, query, id).Scan(
+		&user.ID,
+		&user.Username,
+		&user.FirstName,
+		&user.LastName,
+		&user.Email,
+		&user.Balance,
+		&user.CreatedAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if lastLogin.Valid {
+		user.LastLogin = lastLogin.Time.UTC()
+	}
+
+	return &user, nil
+}
 
 // UpdateBalance updates a user's coin balance
 func (r *UserRepository) UpdateBalance(userID uuid.UUID, newBalance models.Coins) error {

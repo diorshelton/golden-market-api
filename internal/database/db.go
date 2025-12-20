@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
@@ -25,12 +24,12 @@ func loadEnv(envString string) string {
 	return dbString
 }
 
-func SetupTestDB() (*pgx.Conn, error) {
+func SetupTestDB() (*pgxpool.Pool, error) {
 	dbString := loadEnv("TEST_DB_URL")
 
 	ctx := context.Background()
 
-	db, err := pgx.Connect(ctx, dbString)
+	db, err := pgxpool.New(ctx, dbString)
 	if err != nil {
 		log.Fatalf("Failed to open test database: %v", err)
 	}
@@ -112,14 +111,14 @@ func SetupTestDB() (*pgx.Conn, error) {
 
 // SetupTestUserDB creates a temporary in-memory database with just the users table
 // Use this only to test users in isolation
-func SetupTestUserDB() (*pgx.Conn, error) {
+func SetupTestUserDB() (*pgxpool.Pool, error) {
 	connString := os.Getenv("TEST_DATABASE_URL")
 	if connString == " " {
 		return nil, fmt.Errorf("TEST_DATABASE_URL not set")
 	}
 
 	ctx := context.Background()
-	db, err := pgx.Connect(ctx, connString)
+	db, err := pgxpool.New(ctx, connString)
 	if err != nil {
 		log.Fatalf("Failed to open test database: %v", err)
 	}
@@ -237,14 +236,4 @@ func SetupDB() (*pgxpool.Pool, error) {
 	}
 
 	return db, nil
-}
-
-// CleanupTestDB closes and cleans up the test database
-func CleanupTestDB(db *pgx.Conn) {
-	ctx := context.Background()
-	if db != nil {
-		if err := db.Close(ctx); err != nil {
-			fmt.Printf("Warning: Failed to close test database: %v\n", err)
-		}
-	}
 }

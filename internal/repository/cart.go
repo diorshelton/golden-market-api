@@ -8,13 +8,14 @@ import (
 	"github.com/diorshelton/golden-market-api/internal/models"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type CartRepository struct {
-	db *pgx.Conn
+	db *pgxpool.Pool
 }
 
-func NewCartRepository(db *pgx.Conn) *CartRepository {
+func NewCartRepository(db *pgxpool.Pool) *CartRepository {
 	return &CartRepository{db: db}
 }
 

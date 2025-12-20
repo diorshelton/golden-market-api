@@ -8,16 +8,16 @@ import (
 
 	"github.com/diorshelton/golden-market-api/internal/models"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // ProductRepository handles database operations for products
 type ProductRepository struct {
-	db *pgx.Conn
+	db *pgxpool.Pool
 }
 
 // NewProductRepository creates a new product repository
-func NewProductRepository(db *pgx.Conn) *ProductRepository {
+func NewProductRepository(db *pgxpool.Pool) *ProductRepository {
 	return &ProductRepository{db: db}
 }
 

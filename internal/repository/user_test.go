@@ -12,7 +12,7 @@ func TestSpunUpDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to SetupTestUserDB %v", err)
 	}
-	defer database.CleanupTestDB(dbConnection)
+	defer dbConnection.Close()
 
 	type Test struct {
 		firstName    string

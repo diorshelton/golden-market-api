@@ -26,5 +26,5 @@ type Item struct {
 	Quantity  int `json:"quantity"`
 }
 
-// Coins represents the in-game currency
-type Coins int32
+// Coins represents in-game currency
+type Coins int64

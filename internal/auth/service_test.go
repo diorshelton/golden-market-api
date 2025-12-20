@@ -24,7 +24,7 @@ package auth
 // 	)
 
 // 	cleanup := func() {
-// 		database.CleanupTestDB(db)
+// 		db.Close()
 // 	}
 
 // 	return service, cleanup
