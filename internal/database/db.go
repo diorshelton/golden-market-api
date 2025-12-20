@@ -12,14 +12,14 @@ import (
 
 // SetupTestUserDB creates a temporary in memory test user database  with both users and refresh_tokens tables
 func loadEnv(envString string) string {
-// Try to load .env file, but don't crash if it doesn't exist
- if	err := godotenv.Load(".env"); err != nil {
+	// Try to load .env file, but don't crash if it doesn't exist
+	if err := godotenv.Load(".env"); err != nil {
 		log.Printf("No .env file found, using environment variables")
 	}
 
 	dbString := os.Getenv(envString)
 	if dbString == "" {
-		log.Fatalf("%s not set in env",envString)
+		log.Fatalf("%s not set in env", envString)
 	}
 	return dbString
 }
