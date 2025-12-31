@@ -34,11 +34,48 @@ func NewAuthHandler(service AuthServiceInterface) *AuthHandler {
 
 // RegisterRequest represents the registration payload
 type RegisterRequest struct {
-	Username  string `json:"username"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
+	Username        string `json:"username"`
+	FirstName       string `json:"first_name"`
+	LastName        string `json:"last_name"`
+	Email           string `json:"email"`
+	Password        string `json:"password"`
+	PasswordConfirm string `json:"password_confirm"`
+}
+
+// Validates form input from user's POST request
+func (r *RegisterRequest) Validate() error {
+	// Trim whitespace from all fields
+	r.Username = strings.TrimSpace(r.Username)
+	r.FirstName = strings.TrimSpace(r.FirstName)
+	r.LastName = strings.TrimSpace(r.LastName)
+	r.Email = strings.TrimSpace(r.Email)
+	r.Password = strings.TrimSpace(r.Password)
+	r.PasswordConfirm = strings.TrimSpace(r.PasswordConfirm)
+
+	// Check values for empty strings
+	if r.Username == "" || r.FirstName == "" || r.LastName == "" || r.Email == "" || r.Password == "" {
+		return errors.New("all fields required")
+	}
+
+	if len(r.Username) < 3 || len(r.Username) > 30 {
+		return errors.New("username must be between 3 and 30 characters")
+	}
+
+	if len(r.Password) < 8 || len(r.Password) > 64 {
+		return errors.New("password must be between 8 and 64 characters")
+	}
+
+	// Verify both passwords match
+	if r.Password != r.PasswordConfirm {
+		return errors.New("passwords must match")
+	}
+
+	// Validate email address
+	if _, err := mail.ParseAddress(r.Email); err != nil {
+		return errors.New("invalid email address")
+	}
+
+	return nil
 }
 
 // RegisterResponse contains the user data after successful registration
@@ -53,34 +90,28 @@ type RegisterResponse struct {
 
 // Register handles user registration
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	// Parse  form data
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
+
+	var req RegisterRequest
+	// Parse JSON request body
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
-
-	// Extract form data and tri
-	username := strings.TrimSpace(r.Form.Get("username"))
-	firstName := strings.TrimSpace(r.Form.Get("first_name"))
-	lastName := strings.TrimSpace(r.Form.Get("last_name"))
-	email := strings.TrimSpace(r.Form.Get("email"))
-	password := strings.TrimSpace(r.Form.Get("password"))
-	passwordConfirm := strings.TrimSpace(r.Form.Get("password_confirm"))
+	defer r.Body.Close()
 
 	// Validate input
-	if err := validateInput(username, firstName, lastName, email, password, passwordConfirm); err != nil {
+	if err := req.Validate(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// Call the auth service
-	user, err := h.authService.Register(firstName, lastName, email, username, password)
+	user, err := h.authService.Register(req.FirstName, req.LastName, req.Email, req.Username, req.Password)
 	if err != nil {
 		if errors.Is(err, auth.ErrEmailInUse) {
 			http.Error(w, "Email already in use", http.StatusConflict)
 			return
 		}
-
 		http.Error(w, "Error creating user", http.StatusConflict)
 		log.Printf("Error occurred: %v", err)
 		return
@@ -102,6 +133,27 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (r *LoginRequest) Validate() error {
+	// Trim whitespace
+	r.Email = strings.TrimSpace(r.Email)
+	r.Password = strings.TrimSpace(r.Password)
+
+	// Check for empty credentials
+	if r.Email == "" || r.Password == "" {
+		return errors.New("invalid credentials")
+	}
+
+	if _, err := mail.ParseAddress(r.Email); err != nil {
+		return errors.New("invalid credentials")
+	}
+	return nil
+}
+
 // LoginResponse contains the JWT token after successful login
 type LoginResponse struct {
 	AccessToken string `json:"token"`
@@ -109,24 +161,22 @@ type LoginResponse struct {
 
 // Login handles user login with access and refresh tokens
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	// Parse form data
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
+	// Parse JSON
+	var req LoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
+	defer r.Body.Close()
 
-	email := strings.TrimSpace(r.Form.Get("email"))
-	password := strings.TrimSpace(r.Form.Get("password"))
-
-	// Basic validation: avoid calling service with empty credentials
-	if email == "" || password == "" {
-		// Tests expect Unauthorized for missing credentials
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+	// Validate and normalize
+	if err := req.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
 	// Attempt to login
-	accessToken, refreshToken, err := h.authService.Login(email, password)
+	accessToken, refreshToken, err := h.authService.Login(req.Email, req.Password)
 	if err != nil {
 		if errors.Is(err, auth.ErrInvalidCredentials) {
 			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
@@ -137,7 +187,6 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	maxAge := int((7 * 24 * time.Hour).Seconds())
-
 	// Set refresh token in HttpOnly cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
@@ -151,7 +200,6 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	})
 
 	response := LoginResponse{AccessToken: accessToken}
-
 	// Return access tokens
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
@@ -240,31 +288,4 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})
-}
-
-// Validates form input from user's POST request
-func validateInput(username, firstName, lastName, email, password, passwordConfirm string) error {
-	// Check values for empty strings
-	if username == "" || firstName == "" || lastName == "" || email == "" || password == "" {
-		return errors.New("all fields required")
-	}
-
-	if len(username) < 3 || len(username) > 30 {
-		return errors.New("username must be between 3 and 30 characters")
-	}
-
-	if len(password) < 8 || len(password) > 64 {
-		return errors.New("password must be between 8 and 64 characters")
-	}
-
-	// Verify both passwords match
-	if password != passwordConfirm {
-		return errors.New("passwords must match")
-	}
-
-	// Validate email address
-	if _, err := mail.ParseAddress(email); err != nil {
-		return errors.New("invalid email address")
-	}
-	return nil
 }
