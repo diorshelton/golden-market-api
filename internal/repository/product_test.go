@@ -2,11 +2,13 @@ package repository
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/diorshelton/golden-market-api/internal/database"
 	"github.com/diorshelton/golden-market-api/internal/models"
 	"github.com/google/uuid"
+	"github.com/joho/godotenv"
 )
 
 type ProductData struct {
@@ -17,8 +19,15 @@ type ProductData struct {
 }
 
 func TestProductRepository(t *testing.T) {
+	// Load .env file before checking environment variables
+	_ = godotenv.Load("../../.env")
 
-	dbConnection, err := database.SetupTestDB()
+	// Skip test if TEST_DB_URL is not set
+	if os.Getenv("TEST_DB_URL") == "" {
+		t.Skip("TEST_DB_URL not set, skipping database tests")
+	}
+
+	dbConnection, err := database.SetupDB()
 	if err != nil {
 		t.Fatalf("An error occurred: %v", err)
 	}

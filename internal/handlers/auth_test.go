@@ -1,10 +1,10 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 
 	"github.com/diorshelton/golden-market-api/internal/auth"
@@ -39,20 +39,20 @@ func (m *MockAuthService) Logout(tokenString string) error {
 func TestRegisterHandler(t *testing.T) {
 	tests := []struct {
 		name           string
-		formData       url.Values
+		requestBody    map[string]string
 		mockRegister   func(firstName, lastName, email, username, password string) (*models.User, error)
 		expectedStatus int
 		checkResponse  func(t *testing.T, resp *httptest.ResponseRecorder)
 	}{
 		{
 			name: "successful registration",
-			formData: url.Values{
-				"first_name":       []string{"Dandara"},
-				"last_name":        []string{"dos Palmares"},
-				"email":            []string{"dandap@example.com"},
-				"username":         []string{"dandap"},
-				"password":         []string{"password123"},
-				"password_confirm": []string{"password123"},
+			requestBody: map[string]string{
+				"first_name":       "Dandara",
+				"last_name":        "dos Palmares",
+				"email":            "dandap@example.com",
+				"username":         "dandap",
+				"password":         "password123",
+				"password_confirm": "password123",
 			},
 			mockRegister: func(firstName, lastName, email, username, password string) (*models.User, error) {
 				return &models.User{
@@ -77,9 +77,9 @@ func TestRegisterHandler(t *testing.T) {
 		},
 		{
 			name: "missing required fields",
-			formData: url.Values{
-				"first_name": []string{"Dandara"},
-				"email":      []string{"dandap@example.com"},
+			requestBody: map[string]string{
+				"first_name": "Dandara",
+				"email":      "dandap@example.com",
 			},
 			mockRegister:   nil,
 			expectedStatus: http.StatusBadRequest,
@@ -87,13 +87,13 @@ func TestRegisterHandler(t *testing.T) {
 		},
 		{
 			name: "passwords don't match",
-			formData: url.Values{
-				"first_name":       []string{"Dandara"},
-				"last_name":        []string{"dos Palmares"},
-				"email":            []string{"dandap@example.com"},
-				"username":         []string{"dandap"},
-				"password":         []string{"password123"},
-				"password_confirm": []string{"different"},
+			requestBody: map[string]string{
+				"first_name":       "Dandara",
+				"last_name":        "dos Palmares",
+				"email":            "dandap@example.com",
+				"username":         "dandap",
+				"password":         "password123",
+				"password_confirm": "different",
 			},
 			mockRegister:   nil,
 			expectedStatus: http.StatusBadRequest,
@@ -101,13 +101,13 @@ func TestRegisterHandler(t *testing.T) {
 		},
 		{
 			name: "duplicate username",
-			formData: url.Values{
-				"first_name":       []string{"Dandara"},
-				"last_name":        []string{"dos Palmares"},
-				"email":            []string{"dandap@example.com"},
-				"username":         []string{"dandap"},
-				"password":         []string{"password123"},
-				"password_confirm": []string{"password123"},
+			requestBody: map[string]string{
+				"first_name":       "Dandara",
+				"last_name":        "dos Palmares",
+				"email":            "dandap@example.com",
+				"username":         "dandap",
+				"password":         "password123",
+				"password_confirm": "password123",
 			},
 			mockRegister: func(firstName, lastName, email, username, password string) (*models.User, error) {
 				return nil, auth.ErrUsernameExists
@@ -124,9 +124,9 @@ func TestRegisterHandler(t *testing.T) {
 			}
 			handler := NewAuthHandler(mockService)
 
-			req := httptest.NewRequest(http.MethodPost, "/auth/register", nil)
-			req.Form = tt.formData
-			req.PostForm = tt.formData
+			jsonBody, _ := json.Marshal(tt.requestBody)
+			req := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
 
 			rr := httptest.NewRecorder()
 			handler.Register(rr, req)
@@ -145,16 +145,16 @@ func TestRegisterHandler(t *testing.T) {
 func TestLoginHandler(t *testing.T) {
 	tests := []struct {
 		name           string
-		formData       url.Values
+		requestBody    map[string]string
 		mockLogin      func(email, password string) (string, string, error)
 		expectedStatus int
 		checkCookie    bool
 	}{
 		{
 			name: "successful login",
-			formData: url.Values{
-				"email":    []string{"john@example.com"},
-				"password": []string{"password123"},
+			requestBody: map[string]string{
+				"email":    "john@example.com",
+				"password": "password123",
 			},
 			mockLogin: func(email string, password string) (string, string, error) {
 				return "access_token_here",
@@ -165,9 +165,9 @@ func TestLoginHandler(t *testing.T) {
 		},
 		{
 			name: "invalid credentials",
-			formData: url.Values{
-				"email":    []string{"john@example.com"},
-				"password": []string{"wrongpassword"},
+			requestBody: map[string]string{
+				"email":    "john@example.com",
+				"password": "wrongpassword",
 			},
 			mockLogin: func(email string, password string) (string, string, error) {
 				return "", "", auth.ErrInvalidCredentials
@@ -177,9 +177,9 @@ func TestLoginHandler(t *testing.T) {
 		},
 		{
 			name: "missing email",
-			formData: url.Values{
-				"email":    []string{" "},
-				"password": []string{" "},
+			requestBody: map[string]string{
+				"email":    " ",
+				"password": " ",
 			},
 			mockLogin:      nil,
 			expectedStatus: http.StatusUnauthorized,
@@ -194,9 +194,9 @@ func TestLoginHandler(t *testing.T) {
 			}
 			handler := NewAuthHandler(mockService)
 
-			req := httptest.NewRequest(http.MethodPost, "/auth/login", nil)
-			req.Form = tt.formData
-			req.PostForm = tt.formData
+			jsonBody, _ := json.Marshal(tt.requestBody)
+			req := httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
 
 			rr := httptest.NewRecorder()
 			handler.Login(rr, req)
