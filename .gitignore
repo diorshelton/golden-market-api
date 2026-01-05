@@ -47,3 +47,8 @@ tmp/
 .env.development
 .env.*.local
 *.env
+
+# Claude code files
+.claude/
+*.claude
+
