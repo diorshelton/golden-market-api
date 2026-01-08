@@ -12,6 +12,7 @@ import (
 	"github.com/diorshelton/golden-market-api/internal/database"
 	"github.com/diorshelton/golden-market-api/internal/handlers"
 	"github.com/diorshelton/golden-market-api/internal/middleware"
+	"github.com/diorshelton/golden-market-api/internal/product"
 	"github.com/diorshelton/golden-market-api/internal/repository"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -57,6 +58,7 @@ func main() {
 	// Create repositories
 	tokenRepo := repository.NewRefreshTokenRepository(database)
 	userRepo := repository.NewUserRepository(database)
+	productRepo := repository.NewProductRepository(database)
 
 	// Parse token duration
 	accessTTL, err := time.ParseDuration(os.Getenv("ACCESS_TOKEN_EXPIRY"))
@@ -79,9 +81,13 @@ func main() {
 		refreshTTL,
 	)
 
+	// Create product service
+	productService := product.NewProductService(productRepo)
+
 	// Create handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	userHandler := handlers.NewUserHandler(userRepo)
+	productHandler := handlers.NewProductHandler(productService)
 
 	// Create router
 	r := mux.NewRouter()
@@ -89,12 +95,12 @@ func main() {
 	//Apply CORS middleware
 	r.Use(middleware.CORS)
 
-	// Public Routes
+	// --- Public API Endpoints --
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "Welcome to Golden Market!\n")
 	})
 
-	// Health check endpoint
+	// Health check
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -104,14 +110,9 @@ func main() {
 		})
 	}).Methods("GET")
 
-	// Public pages
-	r.HandleFunc("/api/v1/login", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "public/login.html")
-	}).Methods("GET")
-
-	r.HandleFunc("/api/v1/register", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "public/register.html")
-	}).Methods("GET")
+	// --- Product API Endpoints --
+	r.HandleFunc("/api/v1/products", productHandler.Create).Methods("POST", "OPTIONS")
+	r.HandleFunc("/api/v1/products", productHandler.GetProducts).Methods("GET", "OPTIONS")
 
 	// --- Auth API Endpoints (rate limited) ---
 	authRouter := r.PathPrefix("/api/v1/auth").Subrouter()

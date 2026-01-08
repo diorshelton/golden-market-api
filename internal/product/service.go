@@ -1,6 +1,9 @@
 package product
 
 import (
+	"context"
+	"log"
+
 	"github.com/diorshelton/golden-market-api/internal/models"
 	"github.com/diorshelton/golden-market-api/internal/repository"
 	"github.com/google/uuid"
@@ -16,8 +19,15 @@ func NewProductService(productRepo *repository.ProductRepository) *ProductServic
 	}
 }
 
-func (s *ProductService) Create() (*models.Product, error) {
-	return &models.Product{}, nil
+func (s *ProductService) Create(product *models.Product) error {
+	product.ID = uuid.New()
+
+	err := s.ProductRepository.Create(context.Background(), product)
+	if err != nil {
+		log.Printf("An error occurred while adding products %v", err)
+		return err
+	}
+	return nil
 }
 
 func (s *ProductService) Update(id uuid.UUID) {
@@ -29,20 +39,10 @@ func (s *ProductService) Delete(id uuid.UUID) {
 }
 
 func (s *ProductService) GetProduct(id uuid.UUID) error {
-return nil
+	return nil
 }
 
 func (s *ProductService) GetProducts() ([]*models.Product, error) {
- return []*models.Product{}, nil
-}
-
-func (s *ProductService) UpdateStock(id uuid.UUID) error {
-	return nil
-}
-
-func (s *ProductService) DecrementStock(id uuid.UUID) error {
-	return nil
-}
-func (s *ProductService) SearchProducts(id uuid.UUID) error {
-	return nil
+	// s.ProductRepository.GetAll(context.Background())
+	return []*models.Product{}, nil
 }
