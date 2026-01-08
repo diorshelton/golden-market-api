@@ -32,7 +32,7 @@ type ProductRequest struct {
 	Name        string `json:"product_name"`
 	Description string `json:"product_description"`
 	Price       string `json:"price"`
-	Stock       string    `json:"stock"`
+	Stock       string `json:"stock"`
 	ImageURL    string `json:"image_url"`
 	Category    string `json:"category"`
 }
@@ -65,7 +65,7 @@ func (h *ProductHandler) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error parsing stock string", http.StatusBadRequest)
 	}
 
-	product :=&models.Product{
+	product := &models.Product{
 		Name:        req.Name,
 		Description: req.Description,
 		Price:       models.Coins(priceInt),
