@@ -94,7 +94,7 @@ func (r *ProductRepository) Delete(ctx context.Context, productID uuid.UUID) err
 }
 
 // GetAll retrieves all products with optional filtering
-func (r *ProductRepository) GetAll(ctx context.Context, category string, minPrice, maxPrice int) ([]models.Product, error) {
+func (r *ProductRepository) GetAll(ctx context.Context, category string, minPrice, maxPrice int) ([]*models.Product, error) {
 	query := `
 		SELECT id, name, description, price, stock, image_url, category, last_restock, created_at, updated_at
 		FROM products
@@ -129,7 +129,7 @@ func (r *ProductRepository) GetAll(ctx context.Context, category string, minPric
 	}
 	defer rows.Close()
 
-	var products []models.Product
+	var products []*models.Product
 	for rows.Next() {
 		var product models.Product
 		var imageURL *string
@@ -154,7 +154,7 @@ func (r *ProductRepository) GetAll(ctx context.Context, category string, minPric
 			product.ImageURL = *imageURL
 		}
 
-		products = append(products, product)
+		products = append(products, &product)
 	}
 
 	if err = rows.Err(); err != nil {

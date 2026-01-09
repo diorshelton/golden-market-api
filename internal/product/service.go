@@ -43,6 +43,5 @@ func (s *ProductService) GetProduct(id uuid.UUID) error {
 }
 
 func (s *ProductService) GetProducts() ([]*models.Product, error) {
-	// s.ProductRepository.GetAll(context.Background())
-	return []*models.Product{}, nil
+	return s.ProductRepository.GetAll(context.Background(), "", 0, 0)
 }
