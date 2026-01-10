@@ -31,7 +31,7 @@ func (r *CartRepository) AddToCart(ctx context.Context, userID, productID uuid.U
 	if err == pgx.ErrNoRows {
 		// Insert new item
 		insertQuery := `
-			INSERT INTO cart_items(id, user_id, product_id, quantity, created_at, updated_at)
+			INSERT INTO cart_items(id, user_id, product_id, quantity, added_at, updated_at)
 			VALUES ($1, $2, $3, $4, $5, $6)
 		`
 		now := time.Now().UTC()
@@ -62,72 +62,7 @@ func (r *CartRepository) AddToCart(ctx context.Context, userID, productID uuid.U
 
 // GetCart retrieves all items in a user's cart and product details
 func (r *CartRepository) GetCart(ctx context.Context, userID uuid.UUID) (*models.CartSummary, error) {
-	query := `
-		SELECT
-			ci.id, ci.user_id, ci.product_id, ci.quantity, ci.created_at, ci.updated_at,
-			p.id, p.name, p.description, p.price, p.stock, p.image_url, p.category, p.last_restock, p.created_at, p.updated_at
-		FROM cart_items ci
-		JOIN products p ON ci.product_id = p.id
-		WHERE ci.user_id = $1
-		ORDER BY ci.created_at DESC
-	`
-	rows, err := r.db.Query(ctx, query, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get cart: %w", err)
-	}
-	defer rows.Close()
-
-	var items []models.CartItem
-	totalItems := 0
-	totalPrice := 0
-
-	for rows.Next() {
-		var item models.CartItem
-		var product models.Product
-		var imageURL *string
-
-		err := rows.Scan(
-			&item.ID,
-			&item.UserID,
-			&item.ProductID,
-			&item.Quantity,
-			&item.CreatedAt,
-			&item.UpdatedAt,
-			&product.ID,
-			&product.Name,
-			&product.Description,
-			&product.Price,
-			&product.Stock,
-			&imageURL,
-			&product.Category,
-			&product.LastRestock,
-			&product.CreatedAt,
-			&product.UpdatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan cart item: %w", err)
-		}
-
-		if imageURL != nil {
-			product.ImageURL = *imageURL
-		}
-
-		item.Product = &product
-		items = append(items, item)
-
-		totalItems += item.Quantity
-		totalPrice += int(product.Price) * item.Quantity
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating cart items: %w", err)
-	}
-
-	return &models.CartSummary{
-		Items:      items,
-		TotalItems: totalItems,
-		TotalPrice: totalPrice,
-	}, nil
+	return &models.CartSummary{}, nil
 }
 
 // UpdateCartItemQuantity updated the quantity of a specific cart item

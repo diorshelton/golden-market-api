@@ -44,6 +44,7 @@ func (r *ProductRepository) Create(ctx context.Context, product *models.Product)
 		product.ImageURL,
 		product.Category,
 		product.LastRestock,
+		product.IsAvailable,
 		product.CreatedAt,
 		product.UpdatedAt,
 	)
@@ -142,6 +143,7 @@ func (r *ProductRepository) GetAll(ctx context.Context, category string, minPric
 			&product.Stock,
 			&imageURL,
 			&product.Category,
+			&product.IsAvailable,
 			&product.LastRestock,
 			&product.CreatedAt,
 			&product.UpdatedAt,
@@ -183,6 +185,7 @@ func (r *ProductRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.
 		&product.Stock,
 		&imageURL,
 		&product.Category,
+		&product.IsAvailable,
 		&product.LastRestock,
 		&product.CreatedAt,
 		&product.UpdatedAt,
