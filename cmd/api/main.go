@@ -110,9 +110,9 @@ func main() {
 		})
 	}).Methods("GET")
 
-	// --- Product API Endpoints --
-	r.HandleFunc("/api/v1/products", productHandler.Create).Methods("POST", "OPTIONS")
+	// --- Product API Endpoints (Public - Read Only) --
 	r.HandleFunc("/api/v1/products", productHandler.GetProducts).Methods("GET", "OPTIONS")
+	r.HandleFunc("/api/v1/products/{id}", productHandler.GetProduct).Methods("GET", "OPTIONS")
 
 	// --- Auth API Endpoints (rate limited) ---
 	authRouter := r.PathPrefix("/api/v1/auth").Subrouter()
@@ -129,6 +129,11 @@ func main() {
 	protected.Use(middleware.CORS) // Apply CORS to Subrouter
 	protected.Use(middleware.Auth(authService))
 	protected.HandleFunc("/profile", userHandler.Profile).Methods("GET", "OPTIONS")
+
+	// Product write operations (protected)
+	protected.HandleFunc("/products", productHandler.Create).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/products/{id}", productHandler.Update).Methods("PUT", "PATCH", "OPTIONS")
+	protected.HandleFunc("/products/{id}", productHandler.Delete).Methods("DELETE", "OPTIONS")
 
 	// Start server
 	port := os.Getenv("PORT")

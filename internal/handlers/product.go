@@ -115,3 +115,11 @@ func (h *ProductHandler) Update(w http.ResponseWriter, r *http.Request) {
 		"message": "feature not yet implemented",
 	})
 }
+
+func (h *ProductHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusNotImplemented)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Delete endpoint not yet implemented",
+	})
+}
