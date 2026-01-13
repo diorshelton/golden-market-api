@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/diorshelton/golden-market-api/internal/auth"
+	"github.com/diorshelton/golden-market-api/internal/cart"
 	"github.com/diorshelton/golden-market-api/internal/database"
 	"github.com/diorshelton/golden-market-api/internal/handlers"
 	"github.com/diorshelton/golden-market-api/internal/middleware"
@@ -59,6 +60,7 @@ func main() {
 	tokenRepo := repository.NewRefreshTokenRepository(database)
 	userRepo := repository.NewUserRepository(database)
 	productRepo := repository.NewProductRepository(database)
+	cartRepo := repository.NewCartRepository(database)
 
 	// Parse token duration
 	accessTTL, err := time.ParseDuration(os.Getenv("ACCESS_TOKEN_EXPIRY"))
@@ -84,10 +86,14 @@ func main() {
 	// Create product service
 	productService := product.NewProductService(productRepo)
 
+	// Create cart service
+	cartService := cart.NewCartService(cartRepo)
+
 	// Create handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	userHandler := handlers.NewUserHandler(userRepo)
 	productHandler := handlers.NewProductHandler(productService)
+	cartHandler := handlers.NewCartHandler(cartService)
 
 	// Create router
 	r := mux.NewRouter()
@@ -134,6 +140,12 @@ func main() {
 	protected.HandleFunc("/products", productHandler.Create).Methods("POST", "OPTIONS")
 	protected.HandleFunc("/products/{id}", productHandler.Update).Methods("PUT", "PATCH", "OPTIONS")
 	protected.HandleFunc("/products/{id}", productHandler.Delete).Methods("DELETE", "OPTIONS")
+
+	// Cart operations (protected)
+	protected.HandleFunc("/cart", cartHandler.GetCart).Methods("GET", "OPTIONS")
+	protected.HandleFunc("/cart/items", cartHandler.AddToCart).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/cart/items/{id}", cartHandler.UpdateCartItem).Methods("PUT", "PATCH", "OPTIONS")
+	protected.HandleFunc("/cart/items/{id}", cartHandler.RemoveFromCart).Methods("DELETE", "OPTIONS")
 
 	// Start server
 	port := os.Getenv("PORT")
