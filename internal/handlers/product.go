@@ -8,14 +8,16 @@ import (
 	"strconv"
 
 	"github.com/diorshelton/golden-market-api/internal/models"
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 )
 
 type ProductServiceInterface interface {
 	Create(*models.Product) error
 	GetProducts() ([]*models.Product, error)
-	// Delete(id uuid.UUID)
-	// GetProduct(id uuid.UUID) error
-	// Update(id uuid.UUID)
+	GetProduct(id uuid.UUID) (*models.Product, error)
+	Update(id uuid.UUID)
+	Delete(id uuid.UUID)
 }
 
 type ProductHandler struct {
@@ -101,18 +103,27 @@ func (h *ProductHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := uuid.Parse(vars["id"])
+	if err != nil {
+		http.Error(w, "invalid product ID", http.StatusBadRequest)
+		return
+	}
+
+	product, err := h.productService.GetProduct(id)
+	if err != nil {
+		http.Error(w, "product not found", http.StatusNotFound)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusNotImplemented)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "feature not yet implemented",
-	})
+	json.NewEncoder(w).Encode(product)
 }
 
 func (h *ProductHandler) Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNotImplemented)
 	json.NewEncoder(w).Encode(map[string]string{
-		"message": "feature not yet implemented",
+		"message": "Update endpoint not yet implemented",
 	})
 }
 

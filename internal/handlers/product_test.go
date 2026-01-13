@@ -9,19 +9,49 @@ import (
 	"testing"
 
 	"github.com/diorshelton/golden-market-api/internal/models"
+	"github.com/google/uuid"
 )
 
 type MockProductService struct {
 	CreateFunc      func(*models.Product) error
 	GetProductsFunc func() ([]*models.Product, error)
+	GetProductFunc  func(id uuid.UUID) ([]*models.Product, error)
+	UpdateFunc      func(id uuid.UUID)
+	DeleteFunc      func(id uuid.UUID) error
 }
 
+/*
+Create(*models.Product) error
+GetProducts() ([]*models.Product, error)
+GetProduct(id uuid.UUID) (*models.Product, error)
+Update(id uuid.UUID)
+Delete(id uuid.UUID)
+*/
 func (m *MockProductService) Create(product *models.Product) error {
 	return m.CreateFunc(product)
 }
 
 func (m *MockProductService) GetProducts() ([]*models.Product, error) {
 	return m.GetProductsFunc()
+}
+
+func (m *MockProductService) GetProduct(id uuid.UUID) (*models.Product, error) {
+	if m.GetProductFunc != nil {
+		return nil, nil
+	}
+	return nil, nil
+}
+
+func (m *MockProductService) Update(id uuid.UUID) {
+	if m.UpdateFunc != nil {
+		m.UpdateFunc(id)
+	}
+}
+
+func (m *MockProductService) Delete(id uuid.UUID) {
+	if m.DeleteFunc != nil {
+		m.DeleteFunc(id)
+	}
 }
 
 func TestCreateHandler(t *testing.T) {

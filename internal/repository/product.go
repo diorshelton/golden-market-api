@@ -7,6 +7,7 @@ import (
 
 	"github.com/diorshelton/golden-market-api/internal/models"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -169,9 +170,9 @@ func (r *ProductRepository) GetAll(ctx context.Context, category string, minPric
 // GetByID retrieves a product by its ID
 func (r *ProductRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Product, error) {
 	query := `
-		SELECT id, name, description, price, stock, image_url, category, last_restock, created_at, updated_at
+		SELECT id, name, description, price, stock, image_url, category, is_available, last_restock, created_at, updated_at
 		FROM products
-		WHERE id = $1
+		WHERE id = $1 AND is_available = true
 	`
 
 	var product models.Product
@@ -191,6 +192,9 @@ func (r *ProductRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.
 		&product.UpdatedAt,
 	)
 
+	if err == pgx.ErrNoRows {
+		return nil, fmt.Errorf("product not found")
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to get product: %w", err)
 	}

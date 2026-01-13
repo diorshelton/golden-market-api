@@ -2,9 +2,11 @@ package product
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/diorshelton/golden-market-api/internal/models"
+	//"github.com/diorshelton/golden-market-api/internal/product"
 	"github.com/diorshelton/golden-market-api/internal/repository"
 	"github.com/google/uuid"
 )
@@ -38,8 +40,13 @@ func (s *ProductService) Delete(id uuid.UUID) {
 
 }
 
-func (s *ProductService) GetProduct(id uuid.UUID) error {
-	return nil
+func (s *ProductService) GetProduct(id uuid.UUID) (*models.Product, error) {
+	product, err := s.ProductRepository.GetByID(context.Background(), id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get product: %w", err)
+	}
+	return product, nil
+
 }
 
 func (s *ProductService) GetProducts() ([]*models.Product, error) {
