@@ -196,7 +196,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		MaxAge:   maxAge,
 		HttpOnly: true,
-		Secure:   isProduction, // Only use Secure in production (HTTPS)
+		Secure:   isProduction,         // Only use Secure in production (HTTPS)
 		SameSite: http.SameSiteLaxMode, // Changed from Strict to Lax for better compatibility
 		Expires:  time.Now().Add(7 * 24 * time.Hour),
 	})
@@ -241,7 +241,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		MaxAge:   maxAge,
 		HttpOnly: true,
-		Secure:   isProduction, // Only use Secure in production (HTTPS)
+		Secure:   isProduction,         // Only use Secure in production (HTTPS)
 		SameSite: http.SameSiteLaxMode, // Changed from Strict to Lax for better compatibility
 	})
 	// Return the new access token

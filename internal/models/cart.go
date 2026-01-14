@@ -6,20 +6,24 @@ import (
 	"github.com/google/uuid"
 )
 
-// CartItem represents a product in a user's shopping cart
 type CartItem struct {
 	ID        uuid.UUID `json:"id"`
 	UserID    uuid.UUID `json:"user_id"`
 	ProductID uuid.UUID `json:"product_id"`
-	Product   *Product  `json:"product"`
 	Quantity  int       `json:"quantity"`
-	CreatedAt time.Time `json:"created_at"`
+	AddedAt   time.Time `json:"added_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// CartSummary provides cart totals
+type CartItemDetail struct {
+	CartItemID uuid.UUID `json:"cart_item_id"`
+	Product    Product   `json:"product"`
+	Quantity   int       `json:"quantity"`
+	Subtotal   Coins     `json:"subtotal"`
+}
+
 type CartSummary struct {
-	Items      []CartItem `json:"cart_item"`
-	TotalItems int        `json:"total_items"`
-	TotalPrice int        `json:"total_price"`
+	Items      []CartItemDetail `json:"items"`
+	TotalItems int              `json:"total_items"`
+	TotalPrice Coins            `json:"total_price"`
 }

@@ -31,7 +31,7 @@ func (r *CartRepository) AddToCart(ctx context.Context, userID, productID uuid.U
 	if err == pgx.ErrNoRows {
 		// Insert new item
 		insertQuery := `
-			INSERT INTO cart_items(id, user_id, product_id, quantity, created_at, updated_at)
+			INSERT INTO cart_items(id, user_id, product_id, quantity, added_at, updated_at)
 			VALUES ($1, $2, $3, $4, $5, $6)
 		`
 		now := time.Now().UTC()
@@ -64,42 +64,50 @@ func (r *CartRepository) AddToCart(ctx context.Context, userID, productID uuid.U
 func (r *CartRepository) GetCart(ctx context.Context, userID uuid.UUID) (*models.CartSummary, error) {
 	query := `
 		SELECT
-			ci.id, ci.user_id, ci.product_id, ci.quantity, ci.created_at, ci.updated_at,
-			p.id, p.name, p.description, p.price, p.stock, p.image_url, p.category, p.last_restock, p.created_at, p.updated_at
+			ci.id as cart_item_id,
+			ci.quantity,
+			p.id,
+			p.name,
+			p.description,
+			p.price,
+			p.stock,
+			p.image_url,
+			p.category,
+			p.is_available,
+			p.last_restock,
+			p.created_at,
+			p.updated_at
 		FROM cart_items ci
 		JOIN products p ON ci.product_id = p.id
 		WHERE ci.user_id = $1
-		ORDER BY ci.created_at DESC
+		ORDER BY ci.added_at DESC
 	`
+
 	rows, err := r.db.Query(ctx, query, userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get cart: %w", err)
+		return nil, fmt.Errorf("failed to query cart: %w", err)
 	}
 	defer rows.Close()
 
-	var items []models.CartItem
+	var items []models.CartItemDetail
+	var totalPrice models.Coins
 	totalItems := 0
-	totalPrice := 0
 
 	for rows.Next() {
-		var item models.CartItem
+		var item models.CartItemDetail
 		var product models.Product
-		var imageURL *string
 
 		err := rows.Scan(
-			&item.ID,
-			&item.UserID,
-			&item.ProductID,
+			&item.CartItemID,
 			&item.Quantity,
-			&item.CreatedAt,
-			&item.UpdatedAt,
 			&product.ID,
 			&product.Name,
 			&product.Description,
 			&product.Price,
 			&product.Stock,
-			&imageURL,
+			&product.ImageURL,
 			&product.Category,
+			&product.IsAvailable,
 			&product.LastRestock,
 			&product.CreatedAt,
 			&product.UpdatedAt,
@@ -108,18 +116,15 @@ func (r *CartRepository) GetCart(ctx context.Context, userID uuid.UUID) (*models
 			return nil, fmt.Errorf("failed to scan cart item: %w", err)
 		}
 
-		if imageURL != nil {
-			product.ImageURL = *imageURL
-		}
+		item.Product = product
+		item.Subtotal = product.Price * models.Coins(item.Quantity)
 
-		item.Product = &product
 		items = append(items, item)
-
+		totalPrice += item.Subtotal
 		totalItems += item.Quantity
-		totalPrice += int(product.Price) * item.Quantity
 	}
 
-	if err = rows.Err(); err != nil {
+	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating cart items: %w", err)
 	}
 
@@ -131,13 +136,13 @@ func (r *CartRepository) GetCart(ctx context.Context, userID uuid.UUID) (*models
 }
 
 // UpdateCartItemQuantity updated the quantity of a specific cart item
-func (r *CartRepository) UpdateCartItemQuantity(ctx context.Context, cartItemID uuid.UUID, quantity int) error {
+func (r *CartRepository) UpdateCartItemQuantity(ctx context.Context, userID, cartItemID uuid.UUID, quantity int) error {
 	query := `
 		UPDATE cart_items
 		SET quantity = $1, updated_at = $2
-		WHERE id = $3
+		WHERE id = $3 AND user_id = $4
 	`
-	result, err := r.db.Exec(ctx, query, quantity, time.Now().UTC(), cartItemID)
+	result, err := r.db.Exec(ctx, query, quantity, time.Now().UTC(), cartItemID, userID)
 	if err != nil {
 		return fmt.Errorf("failed to update cart item: %w", err)
 	}

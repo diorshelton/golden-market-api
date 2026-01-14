@@ -214,8 +214,8 @@ func TestLoginHandler(t *testing.T) {
 						if !cookie.HttpOnly {
 							t.Error("Expected refresh_token cookie to be HttpOnly")
 						}
-						if cookie.SameSite != http.SameSiteStrictMode {
-							t.Error("Expected refresh_token cookie to have SameSite=Strict")
+						if cookie.SameSite != http.SameSiteLaxMode {
+							t.Error("Expected refresh_token cookie to have SameSite=Lax")
 						}
 					}
 				}
