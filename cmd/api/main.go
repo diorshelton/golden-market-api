@@ -87,7 +87,7 @@ func main() {
 	productService := product.NewProductService(productRepo)
 
 	// Create cart service
-	cartService := cart.NewCartService(cartRepo)
+	cartService := cart.NewCartService(cartRepo, productRepo)
 
 	// Create handlers
 	authHandler := handlers.NewAuthHandler(authService)

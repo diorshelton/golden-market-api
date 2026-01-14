@@ -2,6 +2,7 @@ package cart
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/diorshelton/golden-market-api/internal/models"
 	"github.com/diorshelton/golden-market-api/internal/repository"
@@ -9,16 +10,28 @@ import (
 )
 
 type CartService struct {
-	CartRepository *repository.CartRepository
+	CartRepository    *repository.CartRepository
+	ProductRepository *repository.ProductRepository
 }
 
-func NewCartService(cartRepo *repository.CartRepository) *CartService {
+func NewCartService(cartRepo *repository.CartRepository, productRepo *repository.ProductRepository) *CartService {
 	return &CartService{
-		CartRepository: cartRepo,
+		CartRepository:    cartRepo,
+		ProductRepository: productRepo,
 	}
 }
 
 func (s *CartService) AddToCart(ctx context.Context, userID, productID uuid.UUID, quantity int) error {
+	//verify product is available
+	product, err := s.ProductRepository.GetByID(ctx, productID)
+	if err != nil {
+		return fmt.Errorf("product not found or unavailable %v", err)
+	}
+
+	//Check stock availability
+	if product.Stock < quantity {
+		return fmt.Errorf("insufficient stock: only %d available", product.Stock)
+	}
 	return s.CartRepository.AddToCart(ctx, userID, productID, quantity)
 }
 
