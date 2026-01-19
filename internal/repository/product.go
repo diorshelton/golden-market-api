@@ -98,7 +98,7 @@ func (r *ProductRepository) Delete(ctx context.Context, productID uuid.UUID) err
 // GetAll retrieves all products with optional filtering
 func (r *ProductRepository) GetAll(ctx context.Context, category string, minPrice, maxPrice int) ([]*models.Product, error) {
 	query := `
-		SELECT id, name, description, price, stock, image_url, category, last_restock, created_at, updated_at
+		SELECT id, name, description, price, stock, image_url, category, is_available, last_restock, created_at, updated_at
 		FROM products
 		WHERE 1=1
 	`

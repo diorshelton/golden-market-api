@@ -31,7 +31,7 @@ func (r *CartRepository) AddToCart(ctx context.Context, userID, productID uuid.U
 	if err == pgx.ErrNoRows {
 		// Insert new item
 		insertQuery := `
-			INSERT INTO cart_items(id, user_id, product_id, quantity, created_at, updated_at)
+			INSERT INTO cart_items(id, user_id, product_id, quantity, added_at, updated_at)
 			VALUES ($1, $2, $3, $4, $5, $6)
 		`
 		now := time.Now().UTC()
@@ -64,12 +64,12 @@ func (r *CartRepository) AddToCart(ctx context.Context, userID, productID uuid.U
 func (r *CartRepository) GetCart(ctx context.Context, userID uuid.UUID) (*models.CartSummary, error) {
 	query := `
 		SELECT
-			ci.id, ci.user_id, ci.product_id, ci.quantity, ci.created_at, ci.updated_at,
+			ci.id, ci.user_id, ci.product_id, ci.quantity, ci.added_at, ci.updated_at,
 			p.id, p.name, p.description, p.price, p.stock, p.image_url, p.category, p.last_restock, p.created_at, p.updated_at
 		FROM cart_items ci
 		JOIN products p ON ci.product_id = p.id
 		WHERE ci.user_id = $1
-		ORDER BY ci.created_at DESC
+		ORDER BY ci.added_at DESC
 	`
 	rows, err := r.db.Query(ctx, query, userID)
 	if err != nil {
