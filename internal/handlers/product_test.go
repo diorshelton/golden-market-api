@@ -20,13 +20,6 @@ type MockProductService struct {
 	DeleteFunc      func(id uuid.UUID) error
 }
 
-/*
-Create(*models.Product) error
-GetProducts() ([]*models.Product, error)
-GetProduct(id uuid.UUID) (*models.Product, error)
-Update(id uuid.UUID)
-Delete(id uuid.UUID)
-*/
 func (m *MockProductService) Create(product *models.Product) error {
 	return m.CreateFunc(product)
 }

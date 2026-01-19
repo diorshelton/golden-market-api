@@ -40,7 +40,36 @@ func (s *CartService) GetCart(ctx context.Context, userID uuid.UUID) (*models.Ca
 }
 
 func (s *CartService) UpdateCartItemQuantity(ctx context.Context, userID, cartItemID uuid.UUID, quantity int) error {
-	return s.CartRepository.UpdateCartItemQuantity(ctx, userID, cartItemID, quantity)
+	// Get the user's cart
+	cart, err := s.CartRepository.GetCart(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("cart item not found")
+	}
+
+	// Find the specific cart item to verify ownership
+	var cartItem *models.CartItemDetail
+	for i := range cart.Items {
+		if cart.Items[i].CartItemID == cartItemID {
+			cartItem = &cart.Items[i]
+			break
+		}
+	}
+
+	if cartItem == nil {
+		return fmt.Errorf("cart item not found or does not belong to user")
+	}
+
+	// Verify stock availability for the new quantity
+	product, err := s.ProductRepository.GetByID(ctx, cartItem.Product.ID)
+	if err != nil {
+		return fmt.Errorf("product not found: %w", err)
+	}
+
+	if product.Stock < quantity {
+		return fmt.Errorf("insufficient stock: only %d available", product.Stock)
+	}
+
+	return s.CartRepository.UpdateCartItemQuantity(ctx, cartItemID, quantity)
 }
 
 func (s *CartService) RemoveFromCart(ctx context.Context, userID, cartItemID uuid.UUID) error {
