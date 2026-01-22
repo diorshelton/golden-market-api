@@ -74,6 +74,7 @@ func (h *ProductHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Stock:       stockInt,
 		ImageURL:    req.ImageURL,
 		Category:    req.Category,
+		IsAvailable: true,
 	}
 
 	// Call Product Service
