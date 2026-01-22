@@ -8,7 +8,7 @@ import (
 )
 
 func TestSpunUpDB(t *testing.T) {
-	dbConnection, err := database.SetupTestUserDB()
+	dbConnection, err := database.SetupTestDB()
 	if err != nil {
 		t.Fatalf("Failed to SetupTestUserDB %v", err)
 	}
