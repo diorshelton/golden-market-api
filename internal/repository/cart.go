@@ -65,7 +65,7 @@ func (r *CartRepository) GetCart(ctx context.Context, userID uuid.UUID) (*models
 	query := `
 		SELECT
 			ci.id, ci.user_id, ci.product_id, ci.quantity, ci.added_at, ci.updated_at,
-			p.id, p.name, p.description, p.price, p.stock, p.image_url, p.category, p.last_restock, p.created_at, p.updated_at
+			p.id, p.name, p.description, p.price, p.stock, p.image_url, p.category, p.is_available, p.last_restock, p.created_at, p.updated_at
 		FROM cart_items ci
 		JOIN products p ON ci.product_id = p.id
 		WHERE ci.user_id = $1
@@ -79,7 +79,7 @@ func (r *CartRepository) GetCart(ctx context.Context, userID uuid.UUID) (*models
 
 	var items []models.CartItemDetail
 	totalItems := 0
-	totalPrice := 0
+	totalPrice := models.Coins(0)
 
 	for rows.Next() {
 		var cartItem models.CartItem
@@ -100,6 +100,7 @@ func (r *CartRepository) GetCart(ctx context.Context, userID uuid.UUID) (*models
 			&product.Stock,
 			&imageURL,
 			&product.Category,
+			&product.IsAvailable,
 			&product.LastRestock,
 			&product.CreatedAt,
 			&product.UpdatedAt,
@@ -125,7 +126,7 @@ func (r *CartRepository) GetCart(ctx context.Context, userID uuid.UUID) (*models
 		items = append(items, itemDetail)
 
 		totalItems += cartItem.Quantity
-		totalPrice += int(product.Price) * cartItem.Quantity
+		totalPrice += models.Coins(int(product.Price) * cartItem.Quantity)
 	}
 
 	if err = rows.Err(); err != nil {
