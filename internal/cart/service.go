@@ -25,7 +25,7 @@ func (s *CartService) AddToCart(ctx context.Context, userID, productID uuid.UUID
 	//verify product is available
 	product, err := s.ProductRepository.GetByID(ctx, productID)
 	if err != nil {
-		return fmt.Errorf("product not found or unavailable %w", err)
+		return fmt.Errorf("product not found or unavailable: %w", err)
 	}
 
 	//Check stock availability
@@ -56,12 +56,12 @@ func (s *CartService) UpdateCartItemQuantity(ctx context.Context, userID, cartIt
 	}
 
 	if cartItem == nil {
-		return fmt.Errorf("cart item not found or does not belong to user %w", err)
+		return fmt.Errorf("cart item not found or does not belong to user")
 	}
 
 	// Verify stock availability for the new quantity
 	if cartItem.Product.Stock < quantity {
-		return fmt.Errorf("insufficient stock: only %d available, err:%w", cartItem.Product.Stock, err)
+		return fmt.Errorf("insufficient stock: only %d available", cartItem.Product.Stock)
 	}
 
 	return s.CartRepository.UpdateCartItemQuantity(ctx, cartItemID, quantity)
