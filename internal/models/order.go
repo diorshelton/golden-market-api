@@ -19,10 +19,12 @@ const (
 type Order struct {
 	ID          uuid.UUID   `json:"id"`
 	UserID      uuid.UUID   `json:"user_id"`
+	OrderNumber string      `json:"order_number"`
 	TotalAmount int         `json:"total_amount"`
 	Status      OrderStatus `json:"status"`
 	CreatedAt   time.Time   `json:"created_at"`
-	Item        []OrderItem `json:"items"`
+	UpdatedAt   time.Time   `json:"updated_at"`
+	Items       []OrderItem `json:"items"`
 }
 
 // OrderItem represents a single product in an order
@@ -34,4 +36,5 @@ type OrderItem struct {
 	Quantity     int       `json:"quantity"`
 	PricePerUnit int       `json:"price_per_unit"`
 	Subtotal     int       `json:"subtotal"`
+	CreatedAt    time.Time `json:"created_at"`
 }

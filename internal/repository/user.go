@@ -218,6 +218,48 @@ func (r *UserRepository) UpdateLastLogin(userID uuid.UUID) error {
 	return err
 }
 
+// DeductCoins safely deducts coins from a user's balance (within a transaction)
+// Returns error if insufficient balance
+func (r *UserRepository) DeductCoins(ctx context.Context, tx DBTX, userID uuid.UUID, amount int) error {
+	query := `
+		UPDATE users
+		SET balance = balance - $1
+		WHERE id = $2 AND balance >= $1
+	`
+
+	result, err := tx.Exec(ctx, query, amount, userID)
+	if err != nil {
+		return fmt.Errorf("failed to deduct coins: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("insufficient coins")
+	}
+
+	return nil
+}
+
+// AddCoins adds coins to a user's balance (within a transaction)
+func (r *UserRepository) AddCoins(ctx context.Context, tx DBTX, userID uuid.UUID, amount int) error {
+	query := `UPDATE users SET balance = balance + $1 WHERE id = $2`
+
+	result, err := tx.Exec(ctx, query, amount, userID)
+	if err != nil {
+		return fmt.Errorf("failed to add coins: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("user not found")
+	}
+
+	return nil
+}
+
+// GetPool returns the database pool for transaction management
+func (r *UserRepository) GetPool() *pgxpool.Pool {
+	return r.db
+}
+
 func (r *UserRepository) GetAllUsers() ([]*models.User, error) {
 	query := `SELECT * FROM users`
 

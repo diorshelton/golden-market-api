@@ -173,3 +173,15 @@ func (r *CartRepository) RemoveFromCart(ctx context.Context, userID, cartItemID 
 
 	return nil
 }
+
+// ClearCart removes all items from a user's cart (within a transaction)
+func (r *CartRepository) ClearCart(ctx context.Context, tx DBTX, userID uuid.UUID) error {
+	query := `DELETE FROM cart_items WHERE user_id = $1`
+
+	_, err := tx.Exec(ctx, query, userID)
+	if err != nil {
+		return fmt.Errorf("failed to clear cart: %w", err)
+	}
+
+	return nil
+}

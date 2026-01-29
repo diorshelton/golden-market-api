@@ -85,6 +85,24 @@ func (r *ProductRepository) DecrementStock(ctx context.Context, productID uuid.U
 	return nil
 }
 
+// DecrementStockTx decrements the stock by the given quantity (within a transaction)
+func (r *ProductRepository) DecrementStockTx(ctx context.Context, tx DBTX, productID uuid.UUID, quantity int) error {
+	query := `
+		UPDATE products
+		SET stock = stock - $1, updated_at = NOW()
+		WHERE id = $2 AND stock >= $3
+	`
+	result, err := tx.Exec(ctx, query, quantity, productID, quantity)
+	if err != nil {
+		return fmt.Errorf("failed to decrement stock: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("insufficient stock")
+	}
+	return nil
+}
+
 // Delete removes a product from the database
 func (r *ProductRepository) Delete(ctx context.Context, productID uuid.UUID) error {
 	query := `DELETE FROM products WHERE id = $1`
