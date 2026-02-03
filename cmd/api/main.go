@@ -115,7 +115,7 @@ func main() {
 	cartHandler := handlers.NewCartHandler(cartService)
 	orderHandler := handlers.NewOrderHandler(orderService)
 	inventoryHandler := handlers.NewInventoryHandler(inventoryService)
-	adminHandler := handlers.NewAdminHandler(database, userRepo, inventoryRepo)
+	//adminHandler := handlers.NewAdminHandler(database, userRepo, inventoryRepo)
 
 	// Create router
 	r := mux.NewRouter()
@@ -176,11 +176,13 @@ func main() {
 
 	// Inventory operations (protected)
 	protected.HandleFunc("/inventory", inventoryHandler.GetInventory).Methods("GET", "OPTIONS")
+	/*
+		TODO IMPLEMENT ADMIN FEATURES
 
-	// Admin operations (protected)
-	protected.HandleFunc("/admin/users/{id}/coins", adminHandler.AdjustCoins).Methods("PATCH", "OPTIONS")
-	protected.HandleFunc("/admin/users/{id}/inventory", adminHandler.ClearInventory).Methods("DELETE", "OPTIONS")
-
+		// Admin operations (protected)
+		protected.HandleFunc("/admin/users/{id}/coins", adminHandler.AdjustCoins).Methods("PATCH", "OPTIONS")
+		protected.HandleFunc("/admin/users/{id}/inventory", adminHandler.ClearInventory).Methods("DELETE", "OPTIONS")
+	*/
 	// Start server
 	port := os.Getenv("PORT")
 	if port == "" {

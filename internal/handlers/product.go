@@ -40,8 +40,8 @@ type ProductRequest struct {
 }
 
 // Validate Product input
-func (r *ProductRequest) Validate() error {
-	return nil
+func (r *ProductRequest) Validate(p models.Product) {
+	//TODO implement validate function
 }
 
 type ProductResponse struct {
@@ -65,6 +65,7 @@ func (h *ProductHandler) Create(w http.ResponseWriter, r *http.Request) {
 	stockInt, err := strconv.Atoi(req.Stock)
 	if err != nil {
 		http.Error(w, "Error parsing stock string", http.StatusBadRequest)
+		return
 	}
 
 	product := &models.Product{
