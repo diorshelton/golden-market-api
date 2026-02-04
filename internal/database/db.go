@@ -202,7 +202,7 @@ func SetupDB() (*pgxpool.Pool, error) {
 		last_name VARCHAR(255) NOT NULL,
 		email VARCHAR(255) NOT NULL UNIQUE,
 		password_hash VARCHAR(255) NOT NULL,
-		balance INTEGER NOT NULL DEFAULT 5000,
+		balance INTEGER NOT NULL DEFAULT 5000 CHECK (balance >= 0),
 		created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
 		last_login TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 	);`
@@ -235,7 +235,7 @@ func SetupDB() (*pgxpool.Pool, error) {
 		name VARCHAR(255) NOT NULL CHECK (name <> ''),
 		description TEXT,
 		price INTEGER NOT NULL,
-		stock INTEGER NOT NULL DEFAULT 0,
+		stock INTEGER NOT NULL CHECK (stock >= 0),
 		image_url TEXT,
 		category VARCHAR(255),
 		is_available BOOLEAN NOT NULL DEFAULT true,
