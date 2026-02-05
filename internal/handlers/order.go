@@ -3,9 +3,9 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/diorshelton/golden-market-api/internal/middleware"
 	"github.com/diorshelton/golden-market-api/internal/models"
@@ -42,17 +42,19 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		// Log the full error for debugging
 		log.Printf("CreateOrder error for user %s: %v", userID, err)
 
-		// Check for specific error types
+		// Check for specific error types - these are safe to expose
 		errMsg := err.Error()
 		switch {
-		case contains(errMsg, "cart is empty"):
+		case strings.Contains(errMsg, "cart is empty"):
 			http.Error(w, errMsg, http.StatusBadRequest)
-		case contains(errMsg, "insufficient coins"):
+		case strings.Contains(errMsg, "insufficient coins"):
 			http.Error(w, errMsg, http.StatusPaymentRequired)
-		case contains(errMsg, "insufficient stock"):
+		case strings.Contains(errMsg, "insufficient stock"):
+			http.Error(w, errMsg, http.StatusConflict)
+		case strings.Contains(errMsg, "no longer available"):
 			http.Error(w, errMsg, http.StatusConflict)
 		default:
-			http.Error(w, fmt.Sprintf("failed to create order: %v", err), http.StatusInternalServerError)
+			http.Error(w, "failed to create order", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -72,7 +74,8 @@ func (h *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 
 	orders, err := h.orderService.GetUserOrders(r.Context(), userID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to get orders: %v", err), http.StatusInternalServerError)
+		log.Printf("GetOrders error for user %s: %v", userID, err)
+		http.Error(w, "failed to get orders", http.StatusInternalServerError)
 		return
 	}
 
@@ -103,11 +106,12 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 
 	order, err := h.orderService.GetOrderByID(r.Context(), orderID)
 	if err != nil {
-		if contains(err.Error(), "not found") {
+		if strings.Contains(err.Error(), "not found") {
 			http.Error(w, "order not found", http.StatusNotFound)
 			return
 		}
-		http.Error(w, fmt.Sprintf("failed to get order: %v", err), http.StatusInternalServerError)
+		log.Printf("GetOrder error for order %s: %v", orderID, err)
+		http.Error(w, "failed to get order", http.StatusInternalServerError)
 		return
 	}
 
@@ -120,17 +124,4 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(order)
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsImpl(s, substr))
-}
-
-func containsImpl(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

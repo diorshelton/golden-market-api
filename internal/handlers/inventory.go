@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/diorshelton/golden-market-api/internal/middleware"
@@ -35,7 +35,8 @@ func (h *InventoryHandler) GetInventory(w http.ResponseWriter, r *http.Request) 
 
 	items, err := h.inventoryService.GetUserInventory(r.Context(), userID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to get inventory: %v", err), http.StatusInternalServerError)
+		log.Printf("GetInventory error for user %s: %v", userID, err)
+		http.Error(w, "failed to get inventory", http.StatusInternalServerError)
 		return
 	}
 

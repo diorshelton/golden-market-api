@@ -223,3 +223,43 @@ func (r *ProductRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.
 
 	return &product, nil
 }
+
+// GetByIDForUpdate retrieves a product by ID within a transaction with row lock
+func (r *ProductRepository) GetByIDForUpdate(ctx context.Context, tx DBTX, id uuid.UUID) (*models.Product, error) {
+	query := `
+		SELECT id, name, description, price, stock, image_url, category, is_available, last_restock, created_at, updated_at
+		FROM products
+		WHERE id = $1 AND is_available = true
+		FOR UPDATE
+	`
+
+	var product models.Product
+	var imageURL *string
+
+	err := tx.QueryRow(ctx, query, id).Scan(
+		&product.ID,
+		&product.Name,
+		&product.Description,
+		&product.Price,
+		&product.Stock,
+		&imageURL,
+		&product.Category,
+		&product.IsAvailable,
+		&product.LastRestock,
+		&product.CreatedAt,
+		&product.UpdatedAt,
+	)
+
+	if err == pgx.ErrNoRows {
+		return nil, fmt.Errorf("product not found")
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get product: %w", err)
+	}
+
+	if imageURL != nil {
+		product.ImageURL = *imageURL
+	}
+
+	return &product, nil
+}

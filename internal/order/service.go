@@ -48,8 +48,8 @@ func NewOrderService(
 // 1. Validate cart is not empty
 // 2. Check for duplicate recent order
 // 3. Begin transaction
-// 4. Verify user has sufficient coins
-// 5. Verify all products have sufficient stock
+// 4. Verify user has sufficient coins (with row lock)
+// 5. Verify all products have sufficient stock (with row locks)
 // 6. Deduct coins from user
 // 7. Decrement stock for each product
 // 8. Create order and order items
@@ -57,7 +57,7 @@ func NewOrderService(
 // 10. Clear cart
 // 11. Commit transaction
 func (s *OrderService) CreateOrder(ctx context.Context, userID uuid.UUID) (*models.Order, error) {
-	// Get cart items
+	// Get cart items (outside transaction - just for empty check and duplicate detection)
 	cart, err := s.cartRepo.GetCart(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cart: %w", err)
@@ -86,8 +86,15 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID uuid.UUID) (*mode
 		}
 	}
 
-	// Get user to verify balance
-	user, err := s.userRepo.GetUserByID(userID)
+	// Begin transaction BEFORE validation to ensure consistency
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	// Get user with row lock to verify balance
+	user, err := s.userRepo.GetUserByIDTx(ctx, tx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
@@ -96,20 +103,19 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID uuid.UUID) (*mode
 		return nil, fmt.Errorf("insufficient coins: have %d, need %d", user.Balance, totalAmount)
 	}
 
-	// Verify stock availability for all items before starting transaction
-	for _, item := range cart.Items {
-		if item.Product.Stock < item.Quantity {
-			return nil, fmt.Errorf("insufficient stock for %s: available %d, requested %d",
-				item.Product.Name, item.Product.Stock, item.Quantity)
+	// Verify stock availability with row locks and get fresh product data
+	for i, item := range cart.Items {
+		product, err := s.productRepo.GetByIDForUpdate(ctx, tx, item.Product.ID)
+		if err != nil {
+			return nil, fmt.Errorf("product %s is no longer available", item.Product.Name)
 		}
+		if product.Stock < item.Quantity {
+			return nil, fmt.Errorf("insufficient stock for %s: available %d, requested %d",
+				product.Name, product.Stock, item.Quantity)
+		}
+		// Update cart item with fresh product data
+		cart.Items[i].Product = *product
 	}
-
-	// Begin transaction
-	tx, err := s.db.Begin(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer tx.Rollback(ctx)
 
 	// Create order
 	now := time.Now().UTC()

@@ -3,8 +3,9 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
+	"strings"
 
 	"github.com/diorshelton/golden-market-api/internal/middleware"
 	"github.com/diorshelton/golden-market-api/internal/repository"
@@ -76,15 +77,16 @@ func (h *AdminHandler) AdjustCoins(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		if contains(err.Error(), "insufficient") {
+		log.Printf("AdjustCoins error for user %s: %v", targetUserID, err)
+		if strings.Contains(err.Error(), "insufficient") {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if contains(err.Error(), "not found") {
+		if strings.Contains(err.Error(), "not found") {
 			http.Error(w, "user not found", http.StatusNotFound)
 			return
 		}
-		http.Error(w, fmt.Sprintf("failed to adjust coins: %v", err), http.StatusInternalServerError)
+		http.Error(w, "failed to adjust coins", http.StatusInternalServerError)
 		return
 	}
 
@@ -137,7 +139,8 @@ func (h *AdminHandler) ClearInventory(w http.ResponseWriter, r *http.Request) {
 	}(tx, ctx)
 
 	if err := h.inventoryRepo.ClearByUserID(ctx, tx, targetUserID); err != nil {
-		http.Error(w, fmt.Sprintf("failed to clear inventory: %v", err), http.StatusInternalServerError)
+		log.Printf("ClearInventory error for user %s: %v", targetUserID, err)
+		http.Error(w, "failed to clear inventory", http.StatusInternalServerError)
 		return
 	}
 

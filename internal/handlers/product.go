@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/diorshelton/golden-market-api/internal/models"
 	"github.com/google/uuid"
@@ -40,19 +42,45 @@ type ProductRequest struct {
 }
 
 // Validate Product input
-func (r *ProductRequest) Validate(p models.Product) {
-	//TODO implement validate function
+func (r *ProductRequest) Validate() error {
+	if strings.TrimSpace(r.Name) == "" {
+		return errors.New("product name is required")
+	}
+	if r.Price == "" {
+		return errors.New("price is required")
+	}
+	price, err := strconv.ParseInt(r.Price, 10, 64)
+	if err != nil {
+		return errors.New("invalid price format")
+	}
+	if price <= 0 {
+		return errors.New("price must be greater than 0")
+	}
+	if r.Stock != "" {
+		stock, err := strconv.Atoi(r.Stock)
+		if err != nil {
+			return errors.New("invalid stock format")
+		}
+		if stock < 0 {
+			return errors.New("stock cannot be negative")
+		}
+	}
+	return nil
 }
 
 type ProductResponse struct {
 }
 
 func (h *ProductHandler) Create(w http.ResponseWriter, r *http.Request) {
-
 	var req ProductRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, fmt.Sprintf("Invalid JSON format%v", err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("Invalid JSON format: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if err := req.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -62,10 +90,13 @@ func (h *ProductHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stockInt, err := strconv.Atoi(req.Stock)
-	if err != nil {
-		http.Error(w, "Error parsing stock string", http.StatusBadRequest)
-		return
+	stockInt := 0
+	if req.Stock != "" {
+		stockInt, err = strconv.Atoi(req.Stock)
+		if err != nil {
+			http.Error(w, "Error parsing stock string", http.StatusBadRequest)
+			return
+		}
 	}
 
 	product := &models.Product{
@@ -81,8 +112,8 @@ func (h *ProductHandler) Create(w http.ResponseWriter, r *http.Request) {
 	// Call Product Service
 	err = h.productService.Create(product)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error creating product: %v", err), http.StatusConflict)
-		log.Printf("Error occurred: %v", err)
+		log.Printf("Error creating product: %v", err)
+		http.Error(w, "failed to create product", http.StatusInternalServerError)
 		return
 	}
 
@@ -94,8 +125,8 @@ func (h *ProductHandler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *ProductHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	products, err := h.productService.GetProducts()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error retrieving products: %v", err), http.StatusConflict)
-		log.Printf("Error occurred: %v", err)
+		log.Printf("Error retrieving products: %v", err)
+		http.Error(w, "failed to retrieve products", http.StatusInternalServerError)
 		return
 	}
 

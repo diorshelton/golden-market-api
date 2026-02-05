@@ -260,6 +260,41 @@ func (r *UserRepository) GetPool() *pgxpool.Pool {
 	return r.db
 }
 
+// GetUserByIDTx retrieves a user by ID within a transaction (with row lock for update)
+func (r *UserRepository) GetUserByIDTx(ctx context.Context, tx DBTX, id uuid.UUID) (*models.User, error) {
+	query := `
+		SELECT id, username, first_name, last_name, email, password_hash, balance, created_at, last_login
+		FROM users
+		WHERE id = $1
+		FOR UPDATE
+	`
+
+	var user models.User
+	var lastLogin sql.NullTime
+
+	err := tx.QueryRow(ctx, query, id).Scan(
+		&user.ID,
+		&user.Username,
+		&user.FirstName,
+		&user.LastName,
+		&user.Email,
+		&user.PasswordHash,
+		&user.Balance,
+		&user.CreatedAt,
+		&lastLogin,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("user not found: %w", err)
+	}
+
+	if lastLogin.Valid {
+		user.LastLogin = lastLogin.Time.UTC()
+	}
+
+	return &user, nil
+}
+
 func (r *UserRepository) GetAllUsers() ([]*models.User, error) {
 	query := `SELECT * FROM users`
 
