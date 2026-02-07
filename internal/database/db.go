@@ -336,24 +336,5 @@ func SetupDB() (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("failed to create indexes: %w", err)
 	}
 
-	// Run migrations for existing databases
-	if err := runMigrations(ctx, db); err != nil {
-		return nil, fmt.Errorf("failed to run migrations: %w", err)
-	}
-
 	return db, nil
-}
-
-// runMigrations handles schema updates for existing databases
-func runMigrations(ctx context.Context, db *pgxpool.Pool) error {
-	// Migration 1: Fix inventory constraint and add columns
-	_, _ = db.Exec(ctx, `ALTER TABLE inventory DROP CONSTRAINT IF EXISTS quantity_positive`)
-	_, _ = db.Exec(ctx, `ALTER TABLE inventory ADD CONSTRAINT quantity_non_negative CHECK (quantity >= 0)`)
-	_, _ = db.Exec(ctx, `ALTER TABLE inventory ADD COLUMN IF NOT EXISTS acquired_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()`)
-	_, _ = db.Exec(ctx, `ALTER TABLE inventory ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()`)
-
-	// Migration 2: Update default balance for users (doesn't affect existing users)
-	_, _ = db.Exec(ctx, `ALTER TABLE users ALTER COLUMN balance SET DEFAULT 5000`)
-
-	return nil
 }
