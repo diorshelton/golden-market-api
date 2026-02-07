@@ -10,23 +10,16 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// SetupTestUserDB creates a temporary in memory test user database  with both users and refresh_tokens tables
-func loadEnv(envString string) string {
-	// Try to load .env file from multiple possible locations
-	// This handles both running from root and from test subdirectories
+func SetupTestDB() (*pgxpool.Pool, error) {
+	// Load .env for tests since they don't run through main.go
 	_ = godotenv.Load(".env")
 	_ = godotenv.Load("../.env")
 	_ = godotenv.Load("../../.env")
 
-	dbString := os.Getenv(envString)
+	dbString := os.Getenv("TEMP_DB_URL")
 	if dbString == "" {
-		log.Fatalf("%s not set in env", envString)
+		log.Fatal("TEMP_DB_URL not set in env")
 	}
-	return dbString
-}
-
-func SetupTestDB() (*pgxpool.Pool, error) {
-	dbString := loadEnv("TEMP_DB_URL")
 
 	ctx := context.Background()
 
@@ -186,7 +179,10 @@ func SetupTestDB() (*pgxpool.Pool, error) {
 }
 
 func SetupDB() (*pgxpool.Pool, error) {
-	dbString := loadEnv("LOCAL_DB_URL")
+	dbString := os.Getenv("DATABASE_URL")
+	if dbString == "" {
+		log.Fatal("DATABASE_URL not set in env")
+	}
 	ctx := context.Background()
 	db, err := pgxpool.New(ctx, dbString)
 	if err != nil {

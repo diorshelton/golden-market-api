@@ -30,6 +30,7 @@ func loadEnv() {
 
 	// Check all required variables
 	requiredVars := []string{
+		"DATABASE_URL",
 		"JWT_SECRET",
 		"REFRESH_SECRET",
 		"ACCESS_TOKEN_EXPIRY",
