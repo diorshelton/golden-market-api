@@ -3,8 +3,9 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
+	"strings"
 
 	"github.com/diorshelton/golden-market-api/internal/middleware"
 	"github.com/diorshelton/golden-market-api/internal/models"
@@ -47,7 +48,8 @@ func (h *CartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 
 	cart, err := h.cartService.GetCart(r.Context(), userID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to get cart: %v", err), http.StatusInternalServerError)
+		log.Printf("Failed to get cart for user %s: %v", userID, err)
+		http.Error(w, "failed to get cart", http.StatusInternalServerError)
 		return
 	}
 
@@ -81,7 +83,14 @@ func (h *CartHandler) AddToCart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.cartService.AddToCart(r.Context(), userID, productID, req.Quantity); err != nil {
-		http.Error(w, fmt.Sprintf("failed to add to cart: %v", err), http.StatusInternalServerError)
+		log.Printf("Failed to add to cart for user %s: %v", userID, err)
+		// Check for user-friendly errors
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "insufficient stock") || strings.Contains(errMsg, "not found") {
+			http.Error(w, errMsg, http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "failed to add to cart", http.StatusInternalServerError)
 		return
 	}
 
@@ -118,7 +127,13 @@ func (h *CartHandler) UpdateCartItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.cartService.UpdateCartItemQuantity(r.Context(), userID, cartItemID, req.Quantity); err != nil {
-		http.Error(w, fmt.Sprintf("failed to update cart item: %v", err), http.StatusInternalServerError)
+		log.Printf("Failed to update cart item %s for user %s: %v", cartItemID, userID, err)
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "insufficient stock") || strings.Contains(errMsg, "not found") {
+			http.Error(w, errMsg, http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "failed to update cart item", http.StatusInternalServerError)
 		return
 	}
 
@@ -144,7 +159,8 @@ func (h *CartHandler) RemoveFromCart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.cartService.RemoveFromCart(r.Context(), userID, cartItemID); err != nil {
-		http.Error(w, fmt.Sprintf("failed to remove from cart: %v", err), http.StatusInternalServerError)
+		log.Printf("Failed to remove cart item %s for user %s: %v", cartItemID, userID, err)
+		http.Error(w, "failed to remove from cart", http.StatusInternalServerError)
 		return
 	}
 

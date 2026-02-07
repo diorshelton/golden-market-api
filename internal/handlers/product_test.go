@@ -107,7 +107,7 @@ func TestCreateHandler(t *testing.T) {
 			mockCreate: func(p *models.Product) error {
 				return errors.New("database error")
 			},
-			expectedStatus: http.StatusConflict,
+			expectedStatus: http.StatusInternalServerError,
 			checkResponse:  nil,
 		},
 	}

@@ -218,6 +218,83 @@ func (r *UserRepository) UpdateLastLogin(userID uuid.UUID) error {
 	return err
 }
 
+// DeductCoins safely deducts coins from a user's balance (within a transaction)
+// Returns error if insufficient balance
+func (r *UserRepository) DeductCoins(ctx context.Context, tx DBTX, userID uuid.UUID, amount int) error {
+	query := `
+		UPDATE users
+		SET balance = balance - $1
+		WHERE id = $2 AND balance >= $1
+	`
+
+	result, err := tx.Exec(ctx, query, amount, userID)
+	if err != nil {
+		return fmt.Errorf("failed to deduct coins: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("insufficient coins")
+	}
+
+	return nil
+}
+
+// AddCoins adds coins to a user's balance (within a transaction)
+func (r *UserRepository) AddCoins(ctx context.Context, tx DBTX, userID uuid.UUID, amount int) error {
+	query := `UPDATE users SET balance = balance + $1 WHERE id = $2`
+
+	result, err := tx.Exec(ctx, query, amount, userID)
+	if err != nil {
+		return fmt.Errorf("failed to add coins: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("user not found")
+	}
+
+	return nil
+}
+
+// GetPool returns the database pool for transaction management
+func (r *UserRepository) GetPool() *pgxpool.Pool {
+	return r.db
+}
+
+// GetUserByIDTx retrieves a user by ID within a transaction (with row lock for update)
+func (r *UserRepository) GetUserByIDTx(ctx context.Context, tx DBTX, id uuid.UUID) (*models.User, error) {
+	query := `
+		SELECT id, username, first_name, last_name, email, password_hash, balance, created_at, last_login
+		FROM users
+		WHERE id = $1
+		FOR UPDATE
+	`
+
+	var user models.User
+	var lastLogin sql.NullTime
+
+	err := tx.QueryRow(ctx, query, id).Scan(
+		&user.ID,
+		&user.Username,
+		&user.FirstName,
+		&user.LastName,
+		&user.Email,
+		&user.PasswordHash,
+		&user.Balance,
+		&user.CreatedAt,
+		&lastLogin,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("user not found: %w", err)
+	}
+
+	if lastLogin.Valid {
+		user.LastLogin = lastLogin.Time.UTC()
+	}
+
+	return &user, nil
+}
+
 func (r *UserRepository) GetAllUsers() ([]*models.User, error) {
 	query := `SELECT * FROM users`
 

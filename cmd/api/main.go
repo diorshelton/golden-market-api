@@ -12,7 +12,9 @@ import (
 	"github.com/diorshelton/golden-market-api/internal/cart"
 	"github.com/diorshelton/golden-market-api/internal/database"
 	"github.com/diorshelton/golden-market-api/internal/handlers"
+	"github.com/diorshelton/golden-market-api/internal/inventory"
 	"github.com/diorshelton/golden-market-api/internal/middleware"
+	"github.com/diorshelton/golden-market-api/internal/order"
 	"github.com/diorshelton/golden-market-api/internal/product"
 	"github.com/diorshelton/golden-market-api/internal/repository"
 	"github.com/gorilla/mux"
@@ -28,6 +30,7 @@ func loadEnv() {
 
 	// Check all required variables
 	requiredVars := []string{
+		"DATABASE_URL",
 		"JWT_SECRET",
 		"REFRESH_SECRET",
 		"ACCESS_TOKEN_EXPIRY",
@@ -61,6 +64,9 @@ func main() {
 	userRepo := repository.NewUserRepository(database)
 	productRepo := repository.NewProductRepository(database)
 	cartRepo := repository.NewCartRepository(database)
+	orderRepo := repository.NewOrderRepository(database)
+	orderItemRepo := repository.NewOrderItemRepository(database)
+	inventoryRepo := repository.NewInventoryRepository(database)
 
 	// Parse token duration
 	accessTTL, err := time.ParseDuration(os.Getenv("ACCESS_TOKEN_EXPIRY"))
@@ -89,11 +95,28 @@ func main() {
 	// Create cart service
 	cartService := cart.NewCartService(cartRepo, productRepo)
 
+	// Create order service
+	orderService := order.NewOrderService(
+		database,
+		orderRepo,
+		orderItemRepo,
+		inventoryRepo,
+		userRepo,
+		productRepo,
+		cartRepo,
+	)
+
+	// Create inventory service
+	inventoryService := inventory.NewInventoryService(inventoryRepo)
+
 	// Create handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	userHandler := handlers.NewUserHandler(userRepo)
 	productHandler := handlers.NewProductHandler(productService)
 	cartHandler := handlers.NewCartHandler(cartService)
+	orderHandler := handlers.NewOrderHandler(orderService)
+	inventoryHandler := handlers.NewInventoryHandler(inventoryService)
+	//adminHandler := handlers.NewAdminHandler(database, userRepo, inventoryRepo)
 
 	// Create router
 	r := mux.NewRouter()
@@ -147,6 +170,20 @@ func main() {
 	protected.HandleFunc("/cart/items/{id}", cartHandler.UpdateCartItem).Methods("PUT", "PATCH", "OPTIONS")
 	protected.HandleFunc("/cart/items/{id}", cartHandler.RemoveFromCart).Methods("DELETE", "OPTIONS")
 
+	// Order operations (protected)
+	protected.HandleFunc("/orders", orderHandler.CreateOrder).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/orders", orderHandler.GetOrders).Methods("GET", "OPTIONS")
+	protected.HandleFunc("/orders/{id}", orderHandler.GetOrder).Methods("GET", "OPTIONS")
+
+	// Inventory operations (protected)
+	protected.HandleFunc("/inventory", inventoryHandler.GetInventory).Methods("GET", "OPTIONS")
+	/*
+		TODO IMPLEMENT ADMIN FEATURES
+
+		// Admin operations (protected)
+		protected.HandleFunc("/admin/users/{id}/coins", adminHandler.AdjustCoins).Methods("PATCH", "OPTIONS")
+		protected.HandleFunc("/admin/users/{id}/inventory", adminHandler.ClearInventory).Methods("DELETE", "OPTIONS")
+	*/
 	// Start server
 	port := os.Getenv("PORT")
 	if port == "" {
