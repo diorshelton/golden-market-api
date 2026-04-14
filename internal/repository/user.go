@@ -34,12 +34,13 @@ func (r *UserRepository) CreateUser(username, firstName, lastName, email, passwo
 	}
 
 	query := `
-	INSERT INTO users (id, username, first_name, last_name, email, password_hash, balance, created_at, last_login)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	INSERT INTO users (id, username, first_name, last_name, email, password_hash, created_at, last_login)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	RETURNING balance
 	`
 	ctx := context.Background()
 
-	_, err := r.db.Exec(
+	err := r.db.QueryRow(
 		ctx,
 		query,
 		user.ID,
@@ -48,10 +49,9 @@ func (r *UserRepository) CreateUser(username, firstName, lastName, email, passwo
 		user.LastName,
 		user.Email,
 		user.PasswordHash,
-		user.Balance,
 		user.CreatedAt,
 		user.LastLogin,
-	)
+	).Scan(&user.Balance)
 	if err != nil {
 		return nil, err
 	}
