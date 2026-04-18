@@ -14,6 +14,18 @@ import (
 	"github.com/diorshelton/golden-market-api/internal/models"
 )
 
+// refreshCookieAttrs returns the SameSite mode and Secure flag for the
+// refresh token cookie. In production the frontend and backend are on
+// different domains, so SameSite must be None (with Secure=true) to allow
+// the browser to send the cookie on cross-origin requests. In development
+// both are on the same machine so Lax is sufficient and Secure is not required.
+func refreshCookieAttrs() (http.SameSite, bool) {
+	if os.Getenv("ENVIRONMENT") == "production" {
+		return http.SameSiteNoneMode, true
+	}
+	return http.SameSiteLaxMode, false
+}
+
 type AuthServiceInterface interface {
 	Register(firstName, lastName, email, username, password string) (*models.User, error)
 	Login(email, password string) (string, string, error)
@@ -188,16 +200,15 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	maxAge := int((7 * 24 * time.Hour).Seconds())
-	// Set refresh token in HttpOnly cookie
-	isProduction := os.Getenv("ENVIRONMENT") == "production"
+	sameSite, secure := refreshCookieAttrs()
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    refreshToken,
 		Path:     "/",
 		MaxAge:   maxAge,
 		HttpOnly: true,
-		Secure:   isProduction,         // Only use Secure in production (HTTPS)
-		SameSite: http.SameSiteLaxMode, // Changed from Strict to Lax for better compatibility
+		Secure:   secure,
+		SameSite: sameSite,
 		Expires:  time.Now().Add(7 * 24 * time.Hour),
 	})
 
@@ -233,16 +244,15 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	maxAge := int((7 * 24 * time.Hour).Seconds())
-	// Set new refresh token in HttpOnly cookie
-	isProduction := os.Getenv("ENVIRONMENT") == "production"
+	sameSite, secure := refreshCookieAttrs()
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
-		Value:    tokenPair.RefreshToken, //New rotated token
+		Value:    tokenPair.RefreshToken,
 		Path:     "/",
 		MaxAge:   maxAge,
 		HttpOnly: true,
-		Secure:   isProduction,         // Only use Secure in production (HTTPS)
-		SameSite: http.SameSiteLaxMode, // Changed from Strict to Lax for better compatibility
+		Secure:   secure,
+		SameSite: sameSite,
 	})
 	// Return the new access token
 	response := RefreshResponse{Token: tokenPair.AccessToken}
@@ -254,16 +264,16 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	// Read refresh token from cookie
 	cookie, err := r.Cookie("refresh_token")
-	isProduction := os.Getenv("ENVIRONMENT") == "production"
+	sameSite, secure := refreshCookieAttrs()
 	if err != nil {
 		http.SetCookie(w, &http.Cookie{
 			Name:     "refresh_token",
 			Value:    "",
 			Path:     "/",
-			MaxAge:   -1, // Expire the cookie
+			MaxAge:   -1,
 			HttpOnly: true,
-			Secure:   isProduction,
-			SameSite: http.SameSiteLaxMode,
+			Secure:   secure,
+			SameSite: sameSite,
 		})
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})
@@ -280,15 +290,14 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Clear cookie
-	isProduction = os.Getenv("ENVIRONMENT") == "production"
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    "",
 		Path:     "/",
-		MaxAge:   -1, // Expire cookie
+		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   isProduction,
-		SameSite: http.SameSiteLaxMode,
+		Secure:   secure,
+		SameSite: sameSite,
 	})
 
 	w.Header().Set("Content-Type", "application/json")
