@@ -14,10 +14,11 @@ import (
 
 // Mock AuthService for testing
 type MockAuthService struct {
-	RegisterFunc func(firstName, lastName, email, username, password string) (*models.User, error)
-	LoginFunc    func(email, password string) (accessToken string, refreshToken string, err error)
-	RefreshFunc  func(oldRefreshToken string) (*auth.TokenPair, error)
-	LogoutFunc   func(tokenString string) error
+	RegisterFunc   func(firstName, lastName, email, username, password string) (*models.User, error)
+	LoginFunc      func(email, password string) (accessToken string, refreshToken string, err error)
+	GuestLoginFunc func() (accessToken string, refreshToken string, err error)
+	RefreshFunc    func(oldRefreshToken string) (*auth.TokenPair, error)
+	LogoutFunc     func(tokenString string) error
 }
 
 func (m *MockAuthService) Register(firstName, lastName, email, username, password string) (*models.User, error) {
@@ -26,6 +27,10 @@ func (m *MockAuthService) Register(firstName, lastName, email, username, passwor
 
 func (m *MockAuthService) Login(email, password string) (string, string, error) {
 	return m.LoginFunc(email, password)
+}
+
+func (m *MockAuthService) GuestLogin() (string, string, error) {
+	return m.GuestLoginFunc()
 }
 
 func (m *MockAuthService) Refresh(oldRefreshToken string) (*auth.TokenPair, error) {

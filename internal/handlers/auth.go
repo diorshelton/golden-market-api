@@ -29,6 +29,7 @@ func refreshCookieAttrs() (http.SameSite, bool) {
 type AuthServiceInterface interface {
 	Register(firstName, lastName, email, username, password string) (*models.User, error)
 	Login(email, password string) (string, string, error)
+	GuestLogin() (string, string, error)
 	Refresh(oldRefreshToken string) (*auth.TokenPair, error)
 	Logout(refreshToken string) error
 }
@@ -214,6 +215,33 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	response := LoginResponse{AccessToken: accessToken}
 	// Return access tokens
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// GuestLogin handles login to the single shared guest account
+func (h *AuthHandler) GuestLogin(w http.ResponseWriter, r *http.Request) {
+	accessToken, refreshToken, err := h.authService.GuestLogin()
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		log.Printf("Guest login error: %v", err)
+		return
+	}
+
+	maxAge := int((7 * 24 * time.Hour).Seconds())
+	sameSite, secure := refreshCookieAttrs()
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		Path:     "/",
+		MaxAge:   maxAge,
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: sameSite,
+		Expires:  time.Now().Add(7 * 24 * time.Hour),
+	})
+
+	response := LoginResponse{AccessToken: accessToken}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }

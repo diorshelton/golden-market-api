@@ -150,6 +150,7 @@ func main() {
 
 	authRouter.HandleFunc("/register", authHandler.Register).Methods("POST", "OPTIONS")
 	authRouter.HandleFunc("/login", authHandler.Login).Methods("POST", "OPTIONS")
+	authRouter.HandleFunc("/guest-login", authHandler.GuestLogin).Methods("POST", "OPTIONS")
 	authRouter.HandleFunc("/refresh", authHandler.Refresh).Methods("POST", "OPTIONS")
 	authRouter.HandleFunc("/logout", authHandler.Logout).Methods("POST", "OPTIONS")
 
