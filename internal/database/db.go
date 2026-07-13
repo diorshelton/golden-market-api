@@ -199,6 +199,7 @@ func SetupDB() (*pgxpool.Pool, error) {
 		email VARCHAR(255) NOT NULL UNIQUE,
 		password_hash VARCHAR(255) NOT NULL,
 		balance INTEGER NOT NULL DEFAULT 5000 CHECK (balance >= 0),
+		is_guest BOOLEAN NOT NULL DEFAULT false,
 		created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
 		last_login TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 	);`
@@ -354,6 +355,9 @@ func runMigrations(ctx context.Context, db *pgxpool.Pool) error {
 
 	// Migration 2: Update default balance for users (doesn't affect existing users)
 	_, _ = db.Exec(ctx, `ALTER TABLE users ALTER COLUMN balance SET DEFAULT 5000`)
+
+	// Migration 3: Add is_guest flag for guest login accounts
+	_, _ = db.Exec(ctx, `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_guest BOOLEAN NOT NULL DEFAULT false`)
 
 	return nil
 }

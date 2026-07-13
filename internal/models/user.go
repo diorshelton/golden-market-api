@@ -15,6 +15,7 @@ type User struct {
 	Email        string    `json:"email"`
 	PasswordHash string    `json:"-"`
 	Balance      Coins     `json:"balance"`
+	IsGuest      bool      `json:"is_guest"`
 	Inventory    []Item    `json:"inventory,omitempty"`
 	CreatedAt    time.Time `json:"created_at"`
 	LastLogin    time.Time `json:"last_login"`

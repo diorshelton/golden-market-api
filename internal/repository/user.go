@@ -21,6 +21,12 @@ func NewUserRepository(db *pgxpool.Pool) *UserRepository {
 	return &UserRepository{db: db}
 }
 
+// Fixed identity for the single shared guest account
+const (
+	GuestUsername = "guest"
+	GuestEmail    = "guest@goldenmarket.local"
+)
+
 // CreateUser adds a new user to the database
 func (r *UserRepository) CreateUser(username, firstName, lastName, email, passwordHash string) (*models.User, error) {
 	user := &models.User{
@@ -93,6 +99,109 @@ func (r *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 	}
 
 	return &user, nil
+}
+
+// GetGuestUser retrieves the single shared guest account, if it exists
+func (r *UserRepository) GetGuestUser() (*models.User, error) {
+	query := `
+		SELECT id, username, first_name, last_name, email, password_hash, balance, is_guest, created_at, last_login
+		FROM users
+		WHERE is_guest = true
+		LIMIT 1
+	`
+
+	var user models.User
+	var lastLogin sql.NullTime
+
+	ctx := context.Background()
+
+	err := r.db.QueryRow(ctx, query).Scan(
+		&user.ID,
+		&user.Username,
+		&user.FirstName,
+		&user.LastName,
+		&user.Email,
+		&user.PasswordHash,
+		&user.Balance,
+		&user.IsGuest,
+		&user.CreatedAt,
+		&lastLogin,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if lastLogin.Valid {
+		user.LastLogin = lastLogin.Time.UTC()
+	}
+
+	return &user, nil
+}
+
+// CreateGuestUser creates the single shared guest account
+func (r *UserRepository) CreateGuestUser(passwordHash string) (*models.User, error) {
+	user := &models.User{
+		ID:           uuid.New(),
+		Username:     GuestUsername,
+		FirstName:    "Guest",
+		LastName:     "User",
+		Email:        GuestEmail,
+		PasswordHash: passwordHash,
+		IsGuest:      true,
+		CreatedAt:    time.Now().UTC(),
+	}
+
+	query := `
+	INSERT INTO users (id, username, first_name, last_name, email, password_hash, is_guest, created_at, last_login)
+	VALUES ($1, $2, $3, $4, $5, $6, true, $7, $8)
+	RETURNING balance
+	`
+	ctx := context.Background()
+
+	err := r.db.QueryRow(
+		ctx,
+		query,
+		user.ID,
+		user.Username,
+		user.FirstName,
+		user.LastName,
+		user.Email,
+		user.PasswordHash,
+		user.CreatedAt,
+		user.LastLogin,
+	).Scan(&user.Balance)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+// ResetGuestData wipes the guest account's cart, inventory, and order history,
+// and resets its coin balance back to the starting amount. Runs in a transaction
+// so a partial reset never persists.
+func (r *UserRepository) ResetGuestData(ctx context.Context, userID uuid.UUID) error {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin guest reset transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	if _, err := tx.Exec(ctx, `DELETE FROM cart_items WHERE user_id = $1`, userID); err != nil {
+		return fmt.Errorf("failed to clear guest cart: %w", err)
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM inventory WHERE user_id = $1`, userID); err != nil {
+		return fmt.Errorf("failed to clear guest inventory: %w", err)
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM orders WHERE user_id = $1`, userID); err != nil {
+		return fmt.Errorf("failed to clear guest orders: %w", err)
+	}
+	if _, err := tx.Exec(ctx, `UPDATE users SET balance = 5000 WHERE id = $1`, userID); err != nil {
+		return fmt.Errorf("failed to reset guest balance: %w", err)
+	}
+
+	return tx.Commit(ctx)
 }
 
 func (r *UserRepository) GetUserByUsername(username string) (*models.User, error) {

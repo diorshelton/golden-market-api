@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/diorshelton/golden-market-api/internal/models"
 	"github.com/diorshelton/golden-market-api/internal/repository"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -152,6 +154,47 @@ func (s *AuthService) Login(
 	}
 
 	// Create a refresh token (using service's refreshTokenTTL)
+	refreshTokenObj, err := s.refreshTokenRepo.CreateRefreshToken(user.ID, s.refreshTokenTTL)
+	if err != nil {
+		return "", "", err
+	}
+
+	refreshToken = refreshTokenObj.Token
+
+	return accessToken, refreshToken, nil
+}
+
+// GuestLogin finds or creates the single shared guest account, wipes its
+// cart/inventory/order history on every login so each session starts fresh,
+// and returns access and refresh tokens like Login does.
+func (s *AuthService) GuestLogin() (accessToken string, refreshToken string, err error) {
+	user, err := s.userRepo.GetGuestUser()
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return "", "", err
+		}
+
+		randomPassword := uuid.New().String()
+		hashedPassword, hashErr := hashPassword(randomPassword)
+		if hashErr != nil {
+			return "", "", hashErr
+		}
+
+		user, err = s.userRepo.CreateGuestUser(hashedPassword)
+		if err != nil {
+			return "", "", err
+		}
+	} else {
+		if err := s.userRepo.ResetGuestData(context.Background(), user.ID); err != nil {
+			return "", "", err
+		}
+	}
+
+	accessToken, err = s.generateAccessToken(user)
+	if err != nil {
+		return "", "", err
+	}
+
 	refreshTokenObj, err := s.refreshTokenRepo.CreateRefreshToken(user.ID, s.refreshTokenTTL)
 	if err != nil {
 		return "", "", err
