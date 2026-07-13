@@ -4,7 +4,7 @@ services:
     name: golden-market-api
     runtime: go
     plan: free
-    branch: develop
+    branch: main
     buildCommand: go build -o bin/api ./cmd/api
     startCommand: ./bin/api
     envVars:
