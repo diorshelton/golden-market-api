@@ -6,11 +6,11 @@ import (
 	"log"
 	"net/http"
 	"net/mail"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/diorshelton/golden-market-api/internal/auth"
+	"github.com/diorshelton/golden-market-api/internal/config"
 	"github.com/diorshelton/golden-market-api/internal/models"
 )
 
@@ -19,8 +19,8 @@ import (
 // different domains, so SameSite must be None (with Secure=true) to allow
 // the browser to send the cookie on cross-origin requests. In development
 // both are on the same machine so Lax is sufficient and Secure is not required.
-func refreshCookieAttrs() (http.SameSite, bool) {
-	if os.Getenv("ENVIRONMENT") == "production" {
+func (h *AuthHandler) refreshCookieAttrs() (http.SameSite, bool) {
+	if h.cfg.Environment == "production" {
 		return http.SameSiteNoneMode, true
 	}
 	return http.SameSiteLaxMode, false
@@ -37,12 +37,14 @@ type AuthServiceInterface interface {
 // AuthHandler contains HTTP handlers for authentication
 type AuthHandler struct {
 	authService AuthServiceInterface
+	cfg         *config.Config
 }
 
 // NewAuthHandler creates a new auth handler
-func NewAuthHandler(service AuthServiceInterface) *AuthHandler {
+func NewAuthHandler(service AuthServiceInterface, cfg *config.Config) *AuthHandler {
 	return &AuthHandler{
 		authService: service,
+		cfg:         cfg,
 	}
 }
 
@@ -201,7 +203,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	maxAge := int((7 * 24 * time.Hour).Seconds())
-	sameSite, secure := refreshCookieAttrs()
+	sameSite, secure := h.refreshCookieAttrs()
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    refreshToken,
@@ -229,7 +231,7 @@ func (h *AuthHandler) GuestLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	maxAge := int((7 * 24 * time.Hour).Seconds())
-	sameSite, secure := refreshCookieAttrs()
+	sameSite, secure := h.refreshCookieAttrs()
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    refreshToken,
@@ -272,7 +274,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	maxAge := int((7 * 24 * time.Hour).Seconds())
-	sameSite, secure := refreshCookieAttrs()
+	sameSite, secure := h.refreshCookieAttrs()
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    tokenPair.RefreshToken,
@@ -292,7 +294,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	// Read refresh token from cookie
 	cookie, err := r.Cookie("refresh_token")
-	sameSite, secure := refreshCookieAttrs()
+	sameSite, secure := h.refreshCookieAttrs()
 	if err != nil {
 		http.SetCookie(w, &http.Cookie{
 			Name:     "refresh_token",

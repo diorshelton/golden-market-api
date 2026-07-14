@@ -178,13 +178,12 @@ func SetupTestDB() (*pgxpool.Pool, error) {
 	return db, nil
 }
 
-func SetupDB() (*pgxpool.Pool, error) {
-	dbString := os.Getenv("DATABASE_URL")
-	if dbString == "" {
+func SetupDB(databaseURL string) (*pgxpool.Pool, error) {
+	if databaseURL == "" {
 		log.Fatal("DATABASE_URL not set in env")
 	}
 	ctx := context.Background()
-	db, err := pgxpool.New(ctx, dbString)
+	db, err := pgxpool.New(ctx, databaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
