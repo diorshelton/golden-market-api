@@ -1,18 +1,19 @@
-.PHONY: help run build test test-verbose clean dev install-deps tidy
+.PHONY: help run build build-mac test test-verbose test-coverage clean dev fmt vet check tidy
 
 help:
 	@echo "Available commands:"
 	@echo "  make run          - Run the application"
 	@echo "  make dev          - Run with auto-reload (requires air)"
 	@echo "  make build        - Build the application"
+	@echo "  make build-mac    - Local macOS build with code signing"
 	@echo "  make fmt          - Format the code using gofmt"
 	@echo "  make vet          - Vet the code for potential issues"
 	@echo "  make test         - Run all tests"
 	@echo "  make check        - Run fmt vet and test"
 	@echo "  make test-verbose - Run tests with verbose output"
+	@echo "  make test-coverage - Run tests with coverage"
 	@echo "  make clean        - Remove build artifacts"
 	@echo "  make tidy         - Tidy and verify dependencies"
-	@echo "  make install-deps - Install development dependencies"
 
 run:
 	@echo "Starting server..."
@@ -20,8 +21,7 @@ run:
 
 dev:
 	@echo "Starting development server with auto-reload..."
-# 		go run ./cmd/api
-	@which air > /dev/null || (echo "Air not installed. Run 'make install-deps' first" && exit 1)
+	@which air > /dev/null || (echo "Air not installed. Run 'go install github.com/air-verse/air@latest' first" && exit 1)
 	air
 
 # Generic build (works everywhere)
@@ -35,10 +35,6 @@ build:
 build-mac: build
 	@echo "Code signing for macOS..."
 	codesign -s - bin/api
-
-# Production build (for CI/CD)
-build-prod: build
-	@echo "Production build complete"
 
 fmt:
 	@echo "Formatting code..."
@@ -74,9 +70,4 @@ tidy:
 	@echo "Tidying dependencies..."
 	go mod tidy
 	go mod verify
-
-install-deps:
-	@echo "Installing development dependencies..."
-	go install github.com/air-verse/air@latest
-	@echo "Done! You can now use 'make dev' for auto-reload"
 
