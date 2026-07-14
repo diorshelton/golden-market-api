@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 )
@@ -67,5 +69,25 @@ func TestLoad(t *testing.T) {
 				t.Errorf("RefreshTokenExpiry = %v, want %v", cfg.RefreshTokenExpiry, 168*time.Hour)
 			}
 		})
+	}
+}
+
+func TestConfigStringRedactsSecrets(t *testing.T) {
+	cfg := &Config{
+		DatabaseURL:   "postgres://user:pass@localhost:5432/db",
+		JWTSecret:     "super-secret-jwt",
+		RefreshSecret: "super-secret-refresh",
+		Environment:   "development",
+	}
+
+	for _, got := range []string{fmt.Sprintf("%v", cfg), fmt.Sprintf("%+v", cfg), fmt.Sprintf("%#v", cfg)} {
+		for _, secret := range []string{cfg.DatabaseURL, cfg.JWTSecret, cfg.RefreshSecret} {
+			if strings.Contains(got, secret) {
+				t.Errorf("formatted output leaked a secret: %q contains %q", got, secret)
+			}
+		}
+		if !strings.Contains(got, redacted) {
+			t.Errorf("formatted output %q does not contain redaction marker %q", got, redacted)
+		}
 	}
 }

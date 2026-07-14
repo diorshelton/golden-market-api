@@ -73,7 +73,7 @@ func main() {
 	inventoryService := inventory.NewInventoryService(inventoryRepo)
 
 	// Create handlers
-	authHandler := handlers.NewAuthHandler(authService, cfg)
+	authHandler := handlers.NewAuthHandler(authService, cfg.Environment)
 	userHandler := handlers.NewUserHandler(userRepo)
 	productHandler := handlers.NewProductHandler(productService)
 	cartHandler := handlers.NewCartHandler(cartService)
@@ -85,7 +85,7 @@ func main() {
 	r := mux.NewRouter()
 
 	//Apply CORS middleware
-	corsMiddleware := middleware.CORS(cfg)
+	corsMiddleware := middleware.CORS(cfg.AllowedOrigins)
 	r.Use(corsMiddleware)
 
 	// --- Public API Endpoints --

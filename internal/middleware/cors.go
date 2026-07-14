@@ -3,17 +3,13 @@ package middleware
 import (
 	"net/http"
 	"strings"
-
-	"github.com/diorshelton/golden-market-api/internal/config"
 )
 
 // CORS returns middleware that handles Cross-Origin Resource Sharing,
-// using the allowed origins from cfg.
-func CORS(cfg *config.Config) func(http.Handler) http.Handler {
+// permitting only the given allowedOrigins.
+func CORS(allowedOrigins []string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			allowedOrigins := cfg.AllowedOrigins
-
 			origin := r.Header.Get("Origin")
 
 			// Check if origin is allowed

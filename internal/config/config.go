@@ -21,6 +21,23 @@ type Config struct {
 	Environment        string
 }
 
+const redacted = "[REDACTED]"
+
+// String implements fmt.Stringer, redacting DatabaseURL (which embeds
+// credentials) and the JWT/refresh secrets so an accidental
+// log.Printf("%v", cfg) or similar doesn't leak them.
+func (c *Config) String() string {
+	return fmt.Sprintf(
+		"Config{DatabaseURL:%s JWTSecret:%s RefreshSecret:%s AccessTokenExpiry:%s RefreshTokenExpiry:%s AllowedOrigins:%v Port:%s Environment:%s}",
+		redacted, redacted, redacted, c.AccessTokenExpiry, c.RefreshTokenExpiry, c.AllowedOrigins, c.Port, c.Environment,
+	)
+}
+
+// GoString implements fmt.GoStringer, so "%#v" is redacted the same way.
+func (c *Config) GoString() string {
+	return c.String()
+}
+
 var defaultAllowedOrigins = []string{
 	"http://localhost:5173", // Vite default
 	"http://localhost:3000", // React default

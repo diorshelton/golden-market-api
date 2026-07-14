@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/diorshelton/golden-market-api/internal/auth"
-	"github.com/diorshelton/golden-market-api/internal/config"
 	"github.com/diorshelton/golden-market-api/internal/models"
 )
 
@@ -20,7 +19,7 @@ import (
 // the browser to send the cookie on cross-origin requests. In development
 // both are on the same machine so Lax is sufficient and Secure is not required.
 func (h *AuthHandler) refreshCookieAttrs() (http.SameSite, bool) {
-	if h.cfg.Environment == "production" {
+	if h.environment == "production" {
 		return http.SameSiteNoneMode, true
 	}
 	return http.SameSiteLaxMode, false
@@ -37,14 +36,14 @@ type AuthServiceInterface interface {
 // AuthHandler contains HTTP handlers for authentication
 type AuthHandler struct {
 	authService AuthServiceInterface
-	cfg         *config.Config
+	environment string
 }
 
 // NewAuthHandler creates a new auth handler
-func NewAuthHandler(service AuthServiceInterface, cfg *config.Config) *AuthHandler {
+func NewAuthHandler(service AuthServiceInterface, environment string) *AuthHandler {
 	return &AuthHandler{
 		authService: service,
-		cfg:         cfg,
+		environment: environment,
 	}
 }
 

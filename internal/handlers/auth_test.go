@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/diorshelton/golden-market-api/internal/auth"
-	"github.com/diorshelton/golden-market-api/internal/config"
 	"github.com/diorshelton/golden-market-api/internal/models"
 	"github.com/google/uuid"
 )
@@ -128,7 +127,7 @@ func TestRegisterHandler(t *testing.T) {
 			mockService := &MockAuthService{
 				RegisterFunc: tt.mockRegister,
 			}
-			handler := NewAuthHandler(mockService, &config.Config{Environment: "development"})
+			handler := NewAuthHandler(mockService, "development")
 
 			jsonBody, _ := json.Marshal(tt.requestBody)
 			req := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewBuffer(jsonBody))
@@ -198,7 +197,7 @@ func TestLoginHandler(t *testing.T) {
 			mockService := &MockAuthService{
 				LoginFunc: tt.mockLogin,
 			}
-			handler := NewAuthHandler(mockService, &config.Config{Environment: "development"})
+			handler := NewAuthHandler(mockService, "development")
 
 			jsonBody, _ := json.Marshal(tt.requestBody)
 			req := httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewBuffer(jsonBody))
@@ -295,7 +294,7 @@ func TestRefreshHandler(t *testing.T) {
 			mockService := &MockAuthService{
 				RefreshFunc: tt.mockRefresh,
 			}
-			handler := NewAuthHandler(mockService, &config.Config{Environment: "development"})
+			handler := NewAuthHandler(mockService, "development")
 
 			req := httptest.NewRequest(http.MethodPost, "/auth/refresh", nil)
 			tt.setupCookie(req)
@@ -347,7 +346,7 @@ func TestLogoutHandler(t *testing.T) {
 			mockService := &MockAuthService{
 				LogoutFunc: tt.mockLogout,
 			}
-			handler := NewAuthHandler(mockService, &config.Config{Environment: "development"})
+			handler := NewAuthHandler(mockService, "development")
 
 			req := httptest.NewRequest(http.MethodPost, "/auth/logout", nil)
 			tt.setupCookie(req)
