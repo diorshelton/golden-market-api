@@ -77,6 +77,6 @@ tidy:
 
 install-deps:
 	@echo "Installing development dependencies..."
-	go install github.com/cosmtrek/air@latest
+	go install github.com/air-verse/air@latest
 	@echo "Done! You can now use 'make dev' for auto-reload"
 
