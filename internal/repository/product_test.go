@@ -27,7 +27,7 @@ func TestProductRepository(t *testing.T) {
 		t.Skip("TEST_DB_URL not set, skipping database tests")
 	}
 
-	dbConnection, err := database.SetupDB()
+	dbConnection, err := database.SetupDB(os.Getenv("DATABASE_URL"))
 	if err != nil {
 		t.Fatalf("An error occurred: %v", err)
 	}
