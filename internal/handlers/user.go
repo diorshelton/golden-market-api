@@ -14,7 +14,7 @@ type UserHandler struct {
 	userRepo *repository.UserRepository
 }
 
-// NewUserHandler creates a new yser handler
+// NewUserHandler creates a new user handler
 func NewUserHandler(userRepo *repository.UserRepository) *UserHandler {
 	return &UserHandler{
 		userRepo: userRepo,
