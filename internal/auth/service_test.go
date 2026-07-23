@@ -1,279 +1,291 @@
 package auth
 
-// import (
-// 	"testing"
-// 	"time"
+import (
+	"os"
+	"testing"
+	"time"
 
-// 	"github.com/diorshelton/golden-market-api/internal/database"
-// 	"github.com/diorshelton/golden-market-api/internal/repository"
-// )
+	"github.com/diorshelton/golden-market-api/internal/database"
+	"github.com/diorshelton/golden-market-api/internal/repository"
+	"github.com/joho/godotenv"
+)
 
-// func setupTestService(t *testing.T) (*AuthService, func()) {
-// 	db := database.SetupTestDB()
+func setupTestService(t *testing.T) (*AuthService, func()) {
+	t.Helper()
 
-// 	userRepo := repository.NewUserRepository(db)
-// 	tokenRepo := repository.NewRefreshTokenRepository(db)
+	_ = godotenv.Load("../../.env")
+	if os.Getenv("TEMP_DB_URL") == "" {
+		t.Skip("TEMP_DB_URL not set, skipping database tests")
+	}
 
-// 	service := NewAuthService(
-// 		userRepo,
-// 		tokenRepo,
-// 		"test_jwt_secret",
-// 		"test_refresh_secret",
-// 		time.Minute*15,
-// 		time.Hour*24*7,
-// 	)
+	db, err := database.SetupTestDB()
+	if err != nil {
+		t.Fatalf("failed to set up test db: %v", err)
+	}
 
-// 	cleanup := func() {
-// 		db.Close()
-// 	}
+	userRepo := repository.NewUserRepository(db)
+	tokenRepo := repository.NewRefreshTokenRepository(db)
 
-// 	return service, cleanup
-// }
+	service := NewAuthService(
+		userRepo,
+		tokenRepo,
+		"test_jwt_secret",
+		"test_refresh_secret",
+		time.Minute*15,
+		time.Hour*24*7,
+	)
 
-// func TestRegister(t *testing.T) {
-// 	service, cleanup := setupTestService(t)
-// 	defer cleanup()
+	cleanup := func() {
+		db.Close()
+	}
 
-// 	tests := []struct {
-// 		name      string
-// 		firstName string
-// 		lastName  string
-// 		email     string
-// 		username  string
-// 		password  string
-// 		wantErr   error
-// 	}{
-// 		{
-// 			name:      "successful registration",
-// 			firstName: "Jake",
-// 			lastName:  "The Dog",
-// 			email:     "jdog@example.com",
-// 			username:  "jdog",
-// 			password:  "password123",
-// 			wantErr:   nil,
-// 		},
-// 		{
-// 			name:      "duplicate username",
-// 			firstName: "Joshua",
-// 			lastName:  "The Dog",
-// 			email:     "jake@example.com",
-// 			username:  "jdog",
-// 			password:  "password",
-// 			wantErr:   ErrUsernameExists,
-// 		},
-// 		{
-// 			name:      "duplicate email",
-// 			firstName: "Joshua",
-// 			lastName:  "The Dog",
-// 			email:     "jdog@example.com",
-// 			username:  "jodogo",
-// 			password:  "password123",
-// 			wantErr:   ErrEmailInUse,
-// 		},
-// 	}
+	return service, cleanup
+}
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			user, err := service.Register(tt.firstName, tt.lastName, tt.email, tt.username, tt.password)
+func TestRegister(t *testing.T) {
+	service, cleanup := setupTestService(t)
+	defer cleanup()
 
-// 			if tt.wantErr != nil {
-// 				if err == nil {
-// 					t.Errorf("Expected error %v, got nil", tt.wantErr)
-// 				} else if err != tt.wantErr {
-// 					t.Errorf("Expected error %v, got %v", tt.wantErr, err)
-// 				}
-// 				return
-// 			}
+	tests := []struct {
+		name      string
+		firstName string
+		lastName  string
+		email     string
+		username  string
+		password  string
+		wantErr   error
+	}{
+		{
+			name:      "successful registration",
+			firstName: "Jake",
+			lastName:  "The Dog",
+			email:     "jdog@example.com",
+			username:  "jdog",
+			password:  "password123",
+			wantErr:   nil,
+		},
+		{
+			name:      "duplicate username",
+			firstName: "Joshua",
+			lastName:  "The Dog",
+			email:     "jake@example.com",
+			username:  "jdog",
+			password:  "password",
+			wantErr:   ErrUsernameExists,
+		},
+		{
+			name:      "duplicate email",
+			firstName: "Joshua",
+			lastName:  "The Dog",
+			email:     "jdog@example.com",
+			username:  "jodogo",
+			password:  "password123",
+			wantErr:   ErrEmailInUse,
+		},
+	}
 
-// 			if err != nil {
-// 				t.Fatalf("Unexpected error: %v", err)
-// 			}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			user, err := service.Register(tt.firstName, tt.lastName, tt.email, tt.username, tt.password)
 
-// 			if user.Username != tt.username {
-// 				t.Errorf("Expected username %s, got %s", tt.username,
-// 					user.Username)
-// 			}
-// 			if user.Email != tt.email {
-// 				t.Errorf("Expected email %s, got %s", tt.email, user.Email)
-// 			}
-// 		})
-// 	}
-// }
+			if tt.wantErr != nil {
+				if err == nil {
+					t.Errorf("Expected error %v, got nil", tt.wantErr)
+				} else if err != tt.wantErr {
+					t.Errorf("Expected error %v, got %v", tt.wantErr, err)
+				}
+				return
+			}
 
-// func TestLogin(t *testing.T) {
-// 	service, cleanup := setupTestService(t)
-// 	defer cleanup()
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
 
-// 	// Create a user to test login
-// 	testPassword := "adventuretime"
-// 	user, err := service.Register("Finn", "The Human", "ooofinn@example.com", "finn", "adventuretime")
-// 	if err != nil {
-// 		t.Fatalf("Failed to register user for login test: %v", err)
-// 	}
+			if user.Username != tt.username {
+				t.Errorf("Expected username %s, got %s", tt.username,
+					user.Username)
+			}
+			if user.Email != tt.email {
+				t.Errorf("Expected email %s, got %s", tt.email, user.Email)
+			}
+		})
+	}
+}
 
-// 	tests := []struct {
-// 		name     string
-// 		email    string
-// 		password string
-// 		wantErr  error
-// 	}{
-// 		{
-// 			name:     "successful login",
-// 			email:    user.Email,
-// 			password: testPassword,
-// 			wantErr:  nil,
-// 		},
-// 		{
-// 			name:     "wrong password",
-// 			email:    user.Email,
-// 			password: "wrongpassword",
-// 			wantErr:  ErrInvalidCredentials,
-// 		},
-// 		{
-// 			name:     "non-existent email",
-// 			email:    "nonexistant@example.com",
-// 			password: "password",
-// 			wantErr:  ErrInvalidCredentials,
-// 		},
-// 	}
+func TestLogin(t *testing.T) {
+	service, cleanup := setupTestService(t)
+	defer cleanup()
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			accessToken, refreshToken, err := service.Login(tt.email, tt.password)
+	// Create a user to test login
+	testPassword := "adventuretime"
+	user, err := service.Register("Finn", "The Human", "ooofinn@example.com", "finn", "adventuretime")
+	if err != nil {
+		t.Fatalf("Failed to register user for login test: %v", err)
+	}
 
-// 			if tt.wantErr != nil {
-// 				if err == nil {
-// 					t.Errorf("Expected error %v, got nil", tt.wantErr)
-// 				}
-// 				return
-// 			}
+	tests := []struct {
+		name     string
+		email    string
+		password string
+		wantErr  error
+	}{
+		{
+			name:     "successful login",
+			email:    user.Email,
+			password: testPassword,
+			wantErr:  nil,
+		},
+		{
+			name:     "wrong password",
+			email:    user.Email,
+			password: "wrongpassword",
+			wantErr:  ErrInvalidCredentials,
+		},
+		{
+			name:     "non-existent email",
+			email:    "nonexistant@example.com",
+			password: "password",
+			wantErr:  ErrInvalidCredentials,
+		},
+	}
 
-// 			if err != nil {
-// 				t.Fatalf("Unexpected error: %v", err)
-// 			}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			accessToken, refreshToken, err := service.Login(tt.email, tt.password)
 
-// 			if accessToken == "" {
-// 				t.Error("Expected access token, got empty string")
-// 			}
-// 			if refreshToken == "" {
-// 				t.Error("Expected refresh token, got empty string")
-// 			}
+			if tt.wantErr != nil {
+				if err == nil {
+					t.Errorf("Expected error %v, got nil", tt.wantErr)
+				}
+				return
+			}
 
-// 			//Verify token was stored in DB
-// 			tokenRecord, err := service.refreshTokenRepo.GetRefreshToken(refreshToken)
-// 			if err != nil {
-// 				t.Fatalf("Failed to retrieve refresh token from DB: %v", err)
-// 			}
-// 			if tokenRecord.UserID != user.ID {
-// 				t.Errorf("Expected token UserID %v, got %v", user.ID, tokenRecord.UserID)
-// 			}
-// 		})
-// 	}
-// }
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
 
-// func TestRefresh(t *testing.T) {
-// 	service, cleanup := setupTestService(t)
-// 	defer cleanup()
+			if accessToken == "" {
+				t.Error("Expected access token, got empty string")
+			}
+			if refreshToken == "" {
+				t.Error("Expected refresh token, got empty string")
+			}
 
-// 	// Create test user and login
-// 	user, _ := service.Register("Cosmic", "Owl", "cosmico@example.com", "cosmico", "password123")
-// 	_, refreshToken, _ := service.Login(user.Email, "password123")
+			//Verify token was stored in DB
+			tokenRecord, err := service.refreshTokenRepo.GetRefreshToken(refreshToken)
+			if err != nil {
+				t.Fatalf("Failed to retrieve refresh token from DB: %v", err)
+			}
+			if tokenRecord.UserID != user.ID {
+				t.Errorf("Expected token UserID %v, got %v", user.ID, tokenRecord.UserID)
+			}
+		})
+	}
+}
 
-// 	tests := []struct {
-// 		name    string
-// 		token   string
-// 		wantErr error
-// 	}{
-// 		{
-// 			name:    "successful refresh",
-// 			token:   refreshToken,
-// 			wantErr: nil,
-// 		},
-// 		{
-// 			name:    "invalid token",
-// 			token:   "invalid_token",
-// 			wantErr: ErrInvalidToken,
-// 		},
-// 		{
-// 			name:    "empty token",
-// 			token:   "",
-// 			wantErr: ErrInvalidToken,
-// 		},
-// 	}
+func TestRefresh(t *testing.T) {
+	service, cleanup := setupTestService(t)
+	defer cleanup()
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			tokenPair, err := service.Refresh(tt.token)
+	// Create test user and login
+	user, _ := service.Register("Cosmic", "Owl", "cosmico@example.com", "cosmico", "password123")
+	_, refreshToken, _ := service.Login(user.Email, "password123")
 
-// 			if tt.wantErr != nil {
-// 				if err == nil {
-// 					t.Errorf("Expected error %v, got nil", tt.wantErr)
-// 				}
-// 				return
-// 			}
+	tests := []struct {
+		name    string
+		token   string
+		wantErr error
+	}{
+		{
+			name:    "successful refresh",
+			token:   refreshToken,
+			wantErr: nil,
+		},
+		{
+			name:    "invalid token",
+			token:   "invalid_token",
+			wantErr: ErrInvalidToken,
+		},
+		{
+			name:    "empty token",
+			token:   "",
+			wantErr: ErrInvalidToken,
+		},
+	}
 
-// 			if err != nil {
-// 				t.Fatalf("Unexpected error: %v", err)
-// 			}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tokenPair, err := service.Refresh(tt.token)
 
-// 			if tokenPair.AccessToken == "" {
-// 				t.Error("Expected new access token")
-// 			}
-// 			if tokenPair.RefreshToken == "" {
-// 				t.Error("Expected new refresh token")
-// 			}
+			if tt.wantErr != nil {
+				if err == nil {
+					t.Errorf("Expected error %v, got nil", tt.wantErr)
+				}
+				return
+			}
 
-// 			// Verify old token was deleted
-// 			_, err = service.refreshTokenRepo.GetRefreshToken(tt.token)
-// 			if err == nil {
-// 				t.Error("Expected old token to be deleted")
-// 			}
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
 
-// 			// Verify new token exists
-// 			newTokenRecord, err := service.refreshTokenRepo.GetRefreshToken(tokenPair.RefreshToken)
-// 			if err != nil {
-// 				t.Fatalf("Failed to retrieve new refresh token: %v", err)
-// 			}
-// 			if newTokenRecord.UserID != user.ID {
-// 				t.Error("New token should belong to same user")
-// 			}
-// 		})
-// 	}
-// }
+			if tokenPair.AccessToken == "" {
+				t.Error("Expected new access token")
+			}
+			if tokenPair.RefreshToken == "" {
+				t.Error("Expected new refresh token")
+			}
 
-// func TestRefreshWithExpiredToken(t *testing.T) {
-// 	service, cleanup := setupTestService(t)
-// 	defer cleanup()
+			// Verify old token was deleted
+			_, err = service.refreshTokenRepo.GetRefreshToken(tt.token)
+			if err == nil {
+				t.Error("Expected old token to be deleted")
+			}
 
-// 	// Create test user
-// 	user, _ := service.Register("Marceline", "Abadeer", "MarcelineTheVampireQueen@example.com", "marcelinequeen", "password123")
+			// Verify new token exists
+			newTokenRecord, err := service.refreshTokenRepo.GetRefreshToken(tokenPair.RefreshToken)
+			if err != nil {
+				t.Fatalf("Failed to retrieve new refresh token: %v", err)
+			}
+			if newTokenRecord.UserID != user.ID {
+				t.Error("New token should belong to same user")
+			}
+		})
+	}
+}
 
-// 	// Create an expired refresh token
-// 	expiredToken, _ := service.refreshTokenRepo.CreateRefreshToken(user.ID, -1*time.Hour)
+func TestRefreshWithExpiredToken(t *testing.T) {
+	service, cleanup := setupTestService(t)
+	defer cleanup()
 
-// 	_, err := service.Refresh(expiredToken.Token)
-// 	if err != ErrExpiredToken {
-// 		t.Errorf("Expected ErrExpiredToken, got %v", err)
-// 	}
-// }
+	// Create test user
+	user, _ := service.Register("Marceline", "Abadeer", "MarcelineTheVampireQueen@example.com", "marcelinequeen", "password123")
 
-// func TestLogout(t *testing.T) {
-// 	service, cleanup := setupTestService(t)
-// 	defer cleanup()
+	// Create an expired refresh token
+	expiredToken, _ := service.refreshTokenRepo.CreateRefreshToken(user.ID, -1*time.Hour)
 
-// 	// Create test user and login
-// 	user, _ := service.Register("Peppermint", "Butler", "Pepbut@example.com", "pepbut", "password123")
-// 	_, refreshToken, _ := service.Login(user.Email, "password123")
+	_, err := service.Refresh(expiredToken.Token)
+	if err != ErrExpiredToken {
+		t.Errorf("Expected ErrExpiredToken, got %v", err)
+	}
+}
 
-// 	// Logout
-// 	err := service.Logout(refreshToken)
-// 	if err != nil {
-// 		t.Fatalf("Unexpected error during logout: %v", err)
-// 	}
+func TestLogout(t *testing.T) {
+	service, cleanup := setupTestService(t)
+	defer cleanup()
 
-// 	// Verify token was deleted
-// 	_, err = service.refreshTokenRepo.GetRefreshToken(refreshToken)
-// 	if err == nil {
-// 		t.Error("Expected token to be deleted after logout")
-// 	}
-// }
+	// Create test user and login
+	user, _ := service.Register("Peppermint", "Butler", "Pepbut@example.com", "pepbut", "password123")
+	_, refreshToken, _ := service.Login(user.Email, "password123")
+
+	// Logout
+	err := service.Logout(refreshToken)
+	if err != nil {
+		t.Fatalf("Unexpected error during logout: %v", err)
+	}
+
+	// Verify token was deleted
+	_, err = service.refreshTokenRepo.GetRefreshToken(refreshToken)
+	if err == nil {
+		t.Error("Expected token to be deleted after logout")
+	}
+}
