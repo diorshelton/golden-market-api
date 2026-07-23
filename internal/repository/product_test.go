@@ -22,15 +22,16 @@ func TestProductRepository(t *testing.T) {
 	// Load .env file before checking environment variables
 	_ = godotenv.Load("../../.env")
 
-	// Skip test if TEST_DB_URL is not set
-	if os.Getenv("TEST_DB_URL") == "" {
-		t.Skip("TEST_DB_URL not set, skipping database tests")
+	// Skip test if TEMP_DB_URL is not set
+	if os.Getenv("TEMP_DB_URL") == "" {
+		t.Skip("TEMP_DB_URL not set, skipping database tests")
 	}
 
-	dbConnection, err := database.SetupDB(os.Getenv("DATABASE_URL"))
+	dbConnection, err := database.SetupTestDB()
 	if err != nil {
 		t.Fatalf("An error occurred: %v", err)
 	}
+	defer dbConnection.Close()
 
 	products := []ProductData{
 		{Name: "Mechanical Keyboard", Description: "RGB backlit keyboard with cherry MX brown switches, durable and responsive for typing and gaming.", Price: 12000, Stock: 40},

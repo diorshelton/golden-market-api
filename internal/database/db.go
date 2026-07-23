@@ -23,7 +23,16 @@ func SetupTestDB() (*pgxpool.Pool, error) {
 
 	ctx := context.Background()
 
-	db, err := pgxpool.New(ctx, dbString)
+	// TEMPORARY TABLEs below are session-scoped: only the connection that
+	// creates them can see them. Cap the pool to a single connection so
+	// every query in a test reuses that same session.
+	poolConfig, err := pgxpool.ParseConfig(dbString)
+	if err != nil {
+		log.Fatalf("Failed to parse test database config: %v", err)
+	}
+	poolConfig.MaxConns = 1
+
+	db, err := pgxpool.NewWithConfig(ctx, poolConfig)
 	if err != nil {
 		log.Fatalf("Failed to open test database: %v", err)
 	}
